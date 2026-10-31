@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const SafeSpaceApp());
 }
 
@@ -14,12 +17,12 @@ class SafeSpaceApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF004D40)),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
       ),
       home: Scaffold(
         appBar: AppBar(
           backgroundColor: const Color(0xFF004D40),
-          title: const Text('Safe Space 🇰🇪', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: const Text('Safe Space 🇰🇪', style: TextStyle(color: Colors.white)),
         ),
         body: const Center(
           child: Text('Safe Space Mobile App Online!'),
