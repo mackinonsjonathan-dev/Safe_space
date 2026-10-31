@@ -556,6 +556,6 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'ACCOUNT SETTINGS',
-                    style: TextStyle(fontSize: 13, fo
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
+       
