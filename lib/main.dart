@@ -179,12 +179,12 @@ class MainNavigationContainer extends StatefulWidget {
 }
 
 class _MainNavigationContainerState extends State<MainNavigationContainer> {
-  int _currentIndex = 1;
+  int _currentIndex = 0; // Default to Home tab
 
   @override
   Widget build(BuildContext context) {
     final screens = [
-      const HomeScreen(),
+      HomeScreen(phoneNumber: widget.phoneNumber),
       ProfileScreen(phoneNumber: widget.phoneNumber),
     ];
 
@@ -211,28 +211,276 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class PostItem {
+  final String author;
+  final String category;
+  final String time;
+  final String content;
+  int likes;
+  bool isLiked;
+
+  PostItem({
+    required this.author,
+    required this.category,
+    required this.time,
+    required this.content,
+    required this.likes,
+    this.isLiked = false,
+  });
+}
+
+class HomeScreen extends StatefulWidget {
+  final String phoneNumber;
+  const HomeScreen({super.key, required this.phoneNumber});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _selectedCategory = 'All';
+  final TextEditingController _newPostController = TextEditingController();
+
+  final List<PostItem> _posts = [
+    PostItem(
+      author: 'Jonathan M.',
+      category: 'Mechanics & Tech',
+      time: '10m ago',
+      content: 'Just completed a 150cc pushrod engine setup! Testing compression and smooth ignition timing today. Any tips on optimizing carburetor jetting for highland altitudes?',
+      likes: 12,
+    ),
+    PostItem(
+      author: 'Amina K.',
+      category: 'Business & Trade',
+      time: '1h ago',
+      content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in the North Rift region. Drop recommendations below!',
+      likes: 8,
+    ),
+    PostItem(
+      author: 'Safe Space Team',
+      category: 'General',
+      time: '3h ago',
+      content: 'Karibu Safe Space Kenya! 🇰🇪 Connect with fellow mechanics, builders, and entrepreneurs across the country.',
+      likes: 25,
+    ),
+  ];
+
+  void _addPost() {
+    if (_newPostController.text.trim().isEmpty) return;
+
+    setState(() {
+      _posts.insert(
+        0,
+        PostItem(
+          author: widget.phoneNumber.isEmpty ? 'Safe Space Member' : 'Member (+254 ${widget.phoneNumber})',
+          category: _selectedCategory == 'All' ? 'General' : _selectedCategory,
+          time: 'Just now',
+          content: _newPostController.text.trim(),
+          likes: 0,
+        ),
+      );
+    });
+
+    _newPostController.clear();
+    Navigator.pop(context);
+  }
+
+  void _showCreatePostSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Create a Post',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF004D40)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _newPostController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: "What's on your mind? Share an update or question...",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _addPost,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF004D40),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text('Post to Community'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final filteredPosts = _selectedCategory == 'All'
+        ? _posts
+        : _posts.where((post) => post.category == _selectedCategory).toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF004D40),
-        title: const Text('Safe Space Home 🇰🇪', style: TextStyle(color: Colors.white)),
+        title: const Text('Safe Space Community 🇰🇪', style: TextStyle(color: Colors.white)),
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.feed_outlined, size: 70, color: Color(0xFF004D40)),
-            SizedBox(height: 16),
-            Text(
-              'Community Feed Coming Soon!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showCreatePostSheet,
+        backgroundColor: const Color(0xFF004D40),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_comment),
+        label: const Text('New Post'),
+      ),
+      body: Column(
+        children: [
+          // Category Filter Chips
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            color: Colors.grey.shade100,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['All', 'Mechanics & Tech', 'Business & Trade', 'General'].map((category) {
+                  final isSelected = _selectedCategory == category;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ChoiceChip(
+                      label: Text(category),
+                      selected: isSelected,
+                      selectedColor: const Color(0xFF004D40),
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedCategory = category);
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-          ],
-        ),
+          ),
+
+          // Post Feed List
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: filteredPosts.length,
+              itemBuilder: (context, index) {
+                final post = filteredPosts[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 1.5,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: const Color(0xFF004D40),
+                              radius: 18,
+                              child: Text(
+                                post.author[0],
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    post.author,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                  Text(
+                                    '${post.category} • ${post.time}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          post.content,
+                          style: const TextStyle(fontSize: 14, height: 1.4),
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  post.isLiked = !post.isLiked;
+                                  post.likes += post.isLiked ? 1 : -1;
+                                });
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    post.isLiked ? Icons.favorite : Icons.favorite_border,
+                                    color: post.isLiked ? Colors.red : Colors.grey,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${post.likes}',
+                                    style: TextStyle(
+                                      color: post.isLiked ? Colors.red : Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Row(
+                              children: const [
+                                Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
+                                SizedBox(width: 4),
+                                Text('Reply', style: TextStyle(color: Colors.grey)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -313,53 +561,4 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'ACCOUNT SETTINGS',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  Card(
-                    elevation: 1,
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.person_outline, color: Color(0xFF004D40)),
-                          title: const Text('Edit Account Info'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.notifications_none, color: Color(0xFF004D40)),
-                          title: const Text('Notifications'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade700,
-                        side: BorderSide(color: Colors.red.shade300),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (_) => const PhoneAuthScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                    style:
