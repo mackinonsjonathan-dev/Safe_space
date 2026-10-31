@@ -122,7 +122,11 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('Send Verification Code'),
               ),
             ] else ...[
@@ -147,7 +151,11 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('Verify & Login'),
               ),
               TextButton(
@@ -171,7 +179,7 @@ class MainNavigationContainer extends StatefulWidget {
 }
 
 class _MainNavigationContainerState extends State<MainNavigationContainer> {
-  int _currentIndex = 1; // Default to Profile tab
+  int _currentIndex = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -242,12 +250,10 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF004D40),
         title: const Text('My Profile & Settings', style: TextStyle(color: Colors.white)),
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Profile Card
             Container(
               width: double.infinity,
               color: const Color(0xFF004D40),
@@ -278,44 +284,45 @@ class ProfileScreen extends StatelessWidget {
                     style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
                   ),
                   const SizedBox(height: 8),
-                  Chip(
-                    avatar: const Icon(Icons.verified, size: 16, color: Colors.white),
-                    label: const Text(
-                      'Verified Member',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.shade700,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    backgroundColor: Colors.teal.shade700,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Verified Member',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Settings Sections
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                    child: Text('ACCOUNT SETTINGS'),
+                  const Text(
+                    'ACCOUNT SETTINGS',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey),
                   ),
+                  const SizedBox(height: 8),
                   Card(
                     elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: Column(
                       children: [
                         ListTile(
                           leading: const Icon(Icons.person_outline, color: Color(0xFF004D40)),
                           title: const Text('Edit Account Info'),
-                          subtitle: const Text('Update display name & role'),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () {},
                         ),
@@ -323,59 +330,13 @@ class ProfileScreen extends StatelessWidget {
                         ListTile(
                           leading: const Icon(Icons.notifications_none, color: Color(0xFF004D40)),
                           title: const Text('Notifications'),
-                          subtitle: const Text('Manage alerts & updates'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.shield_outlined, color: Color(0xFF004D40)),
-                          title: const Text('Privacy & Security'),
-                          subtitle: const Text('Manage phone privacy & sessions'),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () {},
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                    child: Text('SUPPORT & ABOUT'),
-                  ),
-                  Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.help_outline, color: Color(0xFF004D40)),
-                          title: const Text('Help & Support'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.info_outline, color: Color(0xFF004D40)),
-                          title: const Text('About Safe Space'),
-                          subtitle: const Text('Version 1.0.0'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
-                        ),
-                      ],
-                    ),
-                  ),
-
                   const SizedBox(height: 20),
-
-                  // Logout Button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -383,9 +344,6 @@ class ProfileScreen extends StatelessWidget {
                         foregroundColor: Colors.red.shade700,
                         side: BorderSide(color: Colors.red.shade300),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       onPressed: () {
                         Navigator.of(context).pushReplacement(
@@ -396,8 +354,6 @@ class ProfileScreen extends StatelessWidget {
                       label: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
-
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
