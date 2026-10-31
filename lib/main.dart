@@ -179,7 +179,7 @@ class MainNavigationContainer extends StatefulWidget {
 }
 
 class _MainNavigationContainerState extends State<MainNavigationContainer> {
-  int _currentIndex = 0; // Default to Home tab
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   ];
 
-  void _addPost() {
+  void _addPost(BuildContext sheetContext) {
     if (_newPostController.text.trim().isEmpty) return;
 
     setState(() {
@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     _newPostController.clear();
-    Navigator.pop(context);
+    Navigator.pop(sheetContext);
   }
 
   void _showCreatePostSheet() {
@@ -292,10 +292,10 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
             left: 16,
             right: 16,
             top: 20,
@@ -319,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _addPost,
+                onPressed: () => _addPost(sheetContext),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF004D40),
                   foregroundColor: Colors.white,
@@ -354,7 +354,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // Category Filter Chips
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             color: Colors.grey.shade100,
@@ -384,8 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
-          // Post Feed List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(12),
@@ -464,8 +461,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 24),
-                            Row(
-                              children: const [
+                            const Row(
+                              children: [
                                 Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
                                 SizedBox(width: 4),
                                 Text('Reply', style: TextStyle(color: Colors.grey)),
@@ -561,4 +558,4 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'ACCOUNT SETTINGS',
-                    style:
+                    style: TextStyle(fontSize: 13, fo
