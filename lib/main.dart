@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const SafeSpaceApp());
@@ -183,8 +184,30 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
   String _displayName = "Safe Space Member";
   String _tradeRole = "Motorcycle Specialist";
   String _location = "Kenya";
+  bool _isLoadingProfile = true;
 
-  void _updateProfile(String newName, String newRole, String newLocation) {
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _displayName = prefs.getString('display_name') ?? "Safe Space Member";
+      _tradeRole = prefs.getString('trade_role') ?? "Motorcycle Specialist";
+      _location = prefs.getString('location') ?? "Kenya";
+      _isLoadingProfile = false;
+    });
+  }
+
+  Future<void> _updateProfile(String newName, String newRole, String newLocation) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('display_name', newName);
+    await prefs.setString('trade_role', newRole);
+    await prefs.setString('location', newLocation);
+
     setState(() {
       _displayName = newName;
       _tradeRole = newRole;
@@ -194,6 +217,12 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingProfile) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF004D40))),
+      );
+    }
+
     final screens = [
       HomeScreen(phoneNumber: widget.phoneNumber, userName: _displayName),
       ProfileScreen(
@@ -575,7 +604,7 @@ class ProfileScreen extends StatelessWidget {
                 );
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile updated successfully!')),
+                  const SnackBar(content: Text('Profile saved locally!')),
                 );
               },
               child: const Text('Save Changes'),
