@@ -180,12 +180,29 @@ class MainNavigationContainer extends StatefulWidget {
 
 class _MainNavigationContainerState extends State<MainNavigationContainer> {
   int _currentIndex = 0;
+  String _displayName = "Safe Space Member";
+  String _tradeRole = "Motorcycle Specialist";
+  String _location = "Kenya";
+
+  void _updateProfile(String newName, String newRole, String newLocation) {
+    setState(() {
+      _displayName = newName;
+      _tradeRole = newRole;
+      _location = newLocation;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final screens = [
-      HomeScreen(phoneNumber: widget.phoneNumber),
-      ProfileScreen(phoneNumber: widget.phoneNumber),
+      HomeScreen(phoneNumber: widget.phoneNumber, userName: _displayName),
+      ProfileScreen(
+        phoneNumber: widget.phoneNumber,
+        displayName: _displayName,
+        tradeRole: _tradeRole,
+        location: _location,
+        onProfileUpdated: _updateProfile,
+      ),
     ];
 
     return Scaffold(
@@ -231,7 +248,8 @@ class PostItem {
 
 class HomeScreen extends StatefulWidget {
   final String phoneNumber;
-  const HomeScreen({super.key, required this.phoneNumber});
+  final String userName;
+  const HomeScreen({super.key, required this.phoneNumber, required this.userName});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -272,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _posts.insert(
         0,
         PostItem(
-          author: widget.phoneNumber.isEmpty ? 'Safe Space Member' : 'Member (+254 ${widget.phoneNumber})',
+          author: widget.userName.isEmpty ? 'Safe Space Member' : widget.userName,
           category: _selectedCategory == 'All' ? 'General' : _selectedCategory,
           time: 'Just now',
           content: _newPostController.text.trim(),
@@ -485,7 +503,88 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class ProfileScreen extends StatelessWidget {
   final String phoneNumber;
-  const ProfileScreen({super.key, required this.phoneNumber});
+  final String displayName;
+  final String tradeRole;
+  final String location;
+  final Function(String name, String role, String loc) onProfileUpdated;
+
+  const ProfileScreen({
+    super.key,
+    required this.phoneNumber,
+    required this.displayName,
+    required this.tradeRole,
+    required this.location,
+    required this.onProfileUpdated,
+  });
+
+  void _showEditProfileDialog(BuildContext context) {
+    final nameController = TextEditingController(text: displayName);
+    final roleController = TextEditingController(text: tradeRole);
+    final locationController = TextEditingController(text: location);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Edit Account Info', style: TextStyle(color: Color(0xFF004D40))),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name / Display Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: roleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Trade / Role (e.g. Mechanic, Trader)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locationController,
+                  decoration: const InputDecoration(
+                    labelText: 'County / Location',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF004D40),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                onProfileUpdated(
+                  nameController.text.trim().isEmpty ? displayName : nameController.text.trim(),
+                  roleController.text.trim().isEmpty ? tradeRole : roleController.text.trim(),
+                  locationController.text.trim().isEmpty ? location : locationController.text.trim(),
+                );
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile updated successfully!')),
+                );
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -515,9 +614,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Safe Space Member',
-                    style: TextStyle(
+                  Text(
+                    displayName,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -525,8 +624,13 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
+                    '$tradeRole • $location',
+                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                     '+254 $displayPhone',
-                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
+                    style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -575,8 +679,9 @@ class ProfileScreen extends StatelessWidget {
                         ListTile(
                           leading: const Icon(Icons.person_outline, color: Color(0xFF004D40)),
                           title: const Text('Edit Account Info'),
+                          subtitle: Text('$displayName • $tradeRole'),
                           trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
+                          onTap: () => _showEditProfileDialog(context),
                         ),
                         const Divider(height: 1),
                         ListTile(
