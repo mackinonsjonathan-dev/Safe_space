@@ -707,7 +707,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.between,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     comment.author,
@@ -777,7 +777,7 @@ class ResourceItem {
   final String contactInfo;
   final String description;
 
-  ResourceItem({
+  const ResourceItem({
     required this.title,
     required this.category,
     required this.contactInfo,
@@ -788,7 +788,7 @@ class ResourceItem {
 class ResourcesHubScreen extends StatelessWidget {
   const ResourcesHubScreen({super.key});
 
-  final List<ResourceItem> _resources = const [
+  static const List<ResourceItem> _resources = [
     ResourceItem(
       title: 'North Rift Spares & Hardware',
       category: 'Spare Parts',
@@ -831,7 +831,7 @@ class ResourcesHubScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
@@ -1104,5 +1104,5 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-                                    
+                                
             
