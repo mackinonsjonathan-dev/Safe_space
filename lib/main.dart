@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const SafeSpaceApp());
@@ -280,6 +282,8 @@ class PostItem {
   final String category;
   final String time;
   final String content;
+  final File? mediaFile;
+  final bool isVideo;
   int likes;
   bool isLiked;
   List<CommentItem> comments;
@@ -289,6 +293,8 @@ class PostItem {
     required this.category,
     required this.time,
     required this.content,
+    this.mediaFile,
+    this.isVideo = false,
     required this.likes,
     this.isLiked = false,
     List<CommentItem>? comments,
@@ -307,6 +313,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _newPostController = TextEditingController();
+  File? _selectedMediaFile;
+  bool _isMediaTypeVideo = false;
+  final ImagePicker _picker = ImagePicker();
 
   late final List<PostItem> _posts;
 
@@ -332,19 +341,24 @@ class _HomeScreenState extends State<HomeScreen> {
         likes: 8,
         comments: [],
       ),
-      PostItem(
-        author: 'Safe Space Team',
-        category: 'General',
-        time: '3h ago',
-        content: 'Karibu Safe Space Kenya! 🇰🇪 Connect with fellow mechanics, builders, and entrepreneurs across the country.',
-        likes: 25,
-        comments: [],
-      ),
     ];
   }
 
+  Future<void> _pickMedia(bool isVideo) async {
+    final XFile? pickedFile = isVideo
+        ? await _picker.pickVideo(source: ImageSource.gallery)
+        : await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedMediaFile = File(pickedFile.path);
+        _isMediaTypeVideo = isVideo;
+      });
+    }
+  }
+
   void _addPost(BuildContext sheetContext) {
-    if (_newPostController.text.trim().isEmpty) return;
+    if (_newPostController.text.trim().isEmpty && _selectedMediaFile == null) return;
 
     setState(() {
       _posts.insert(
@@ -354,12 +368,16 @@ class _HomeScreenState extends State<HomeScreen> {
           category: _selectedCategory == 'All' ? 'General' : _selectedCategory,
           time: 'Just now',
           content: _newPostController.text.trim(),
+          mediaFile: _selectedMediaFile,
+          isVideo: _isMediaTypeVideo,
           likes: 0,
         ),
       );
     });
 
     _newPostController.clear();
+    _selectedMediaFile = null;
+    _isMediaTypeVideo = false;
     Navigator.pop(sheetContext);
   }
 
@@ -371,42 +389,105 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-            left: 16,
-            right: 16,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Create a Post',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF004D40)),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                left: 16,
+                right: 16,
+                top: 20,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _newPostController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: "What's on your mind? Share an update or question...",
-                  border: OutlineInputBorder(),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Create a Post',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF004D40)),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _newPostController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: "What's on your mind? Share an update or question...",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _pickMedia(false);
+                          setModalState(() {});
+                        },
+                        icon: const Icon(Icons.image, color: Color(0xFF004D40)),
+                        label: const Text('Add Image', style: TextStyle(color: Color(0xFF004D40))),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await _pickMedia(true);
+                          setModalState(() {});
+                        },
+                        icon: const Icon(Icons.videocam, color: Color(0xFF004D40)),
+                        label: const Text('Add Video', style: TextStyle(color: Color(0xFF004D40))),
+                      ),
+                    ],
+                  ),
+                  if (_selectedMediaFile != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.between,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _isMediaTypeVideo ? Icons.video_file : Icons.image,
+                                color: const Color(0xFF004D40),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isMediaTypeVideo ? 'Video attached' : 'Image attached',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF004D40)),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () {
+                              setModalState(() {
+                                _selectedMediaFile = null;
+                                _isMediaTypeVideo = false;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => _addPost(sheetContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF004D40),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Post to Community'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => _addPost(sheetContext),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF004D40),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text('Post to Community'),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -497,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 backgroundColor: const Color(0xFF004D40),
                                 radius: 18,
                                 child: Text(
-                                  post.author[0],
+                                post.author[0],
                                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -519,11 +600,41 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            post.content,
-                            style: const TextStyle(fontSize: 14, height: 1.4),
-                          ),
+                          if (post.content.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              post.content,
+                              style: const TextStyle(fontSize: 14, height: 1.4),
+                            ),
+                          ],
+                          if (post.mediaFile != null) ...[
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: post.isVideo
+                                  ? Container(
+                                      height: 180,
+                                      width: double.infinity,
+                                      color: Colors.black87,
+                                      child: const Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.play_circle_fill, size: 50, color: Colors.white),
+                                            SizedBox(height: 8),
+                                            Text('Attached Video', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  : Image.file(
+                                      post.mediaFile!,
+                                      height: 200,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           const Divider(height: 1),
                           const SizedBox(height: 8),
@@ -662,11 +773,41 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.post.content,
-                    style: const TextStyle(fontSize: 16, height: 1.4),
-                  ),
+                  if (widget.post.content.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.post.content,
+                      style: const TextStyle(fontSize: 16, height: 1.4),
+                    ),
+                  ],
+                  if (widget.post.mediaFile != null) ...[
+                    const SizedBox(height: 16),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: widget.post.isVideo
+                          ? Container(
+                              height: 200,
+                              width: double.infinity,
+                              color: Colors.black87,
+                              child: const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.play_circle_fill, size: 60, color: Colors.white),
+                                    SizedBox(height: 8),
+                                    Text('Attached Video Preview', style: TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Image.file(
+                              widget.post.mediaFile!,
+                              height: 240,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 8),
@@ -707,7 +848,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.between,
                                 children: [
                                   Text(
                                     comment.author,
@@ -831,7 +972,7 @@ class ResourcesHubScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.between,
                     children: [
                       Expanded(
                         child: Text(
@@ -940,7 +1081,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+               ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
@@ -1104,5 +1245,4 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-                                
-            
+     
