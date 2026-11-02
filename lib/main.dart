@@ -225,6 +225,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
 
     final screens = [
       HomeScreen(phoneNumber: widget.phoneNumber, userName: _displayName),
+      const ResourcesHubScreen(),
       ProfileScreen(
         phoneNumber: widget.phoneNumber,
         displayName: _displayName,
@@ -245,6 +246,11 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder_shared_outlined),
+            activeIcon: Icon(Icons.folder_shared),
+            label: 'Resources',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -525,6 +531,120 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ResourceItem {
+  final String title;
+  final String category;
+  final String contactInfo;
+  final String description;
+
+  ResourceItem({
+    required this.title,
+    required this.category,
+    required this.contactInfo,
+    required this.description,
+  });
+}
+
+class ResourcesHubScreen extends StatelessWidget {
+  const ResourcesHubScreen({super.key});
+
+  final List<ResourceItem> _resources = const [
+    ResourceItem(
+      title: 'North Rift Spares & Hardware',
+      category: 'Spare Parts',
+      contactInfo: 'Eldoret • 0712 345 678',
+      description: 'Specializes in wholesale TVS HLX, Honda Ace CB125, and CG150 pushrod engine components.',
+    ),
+    ResourceItem(
+      title: 'Koinange St. Mechanics Supply',
+      category: 'Tools & Equipment',
+      contactInfo: 'Nairobi • 0722 987 654',
+      description: 'Reliable source for precision gauges, carburetor jet kits, and heavy-duty shop tools.',
+    ),
+    ResourceItem(
+      title: 'NTSA Vehicle Registration Guide',
+      category: 'Compliance & Legal',
+      contactInfo: 'TIMS Portal Online',
+      description: 'Step-by-step documentation checklist for inspecting and registering custom-built or modified motorcycles.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+ backgroundColor: const Color(0xFF004D40),
+        title: const Text('Trade & Supplier Hub 🇰🇪', style: TextStyle(color: Colors.white)),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _resources.length,
+        itemBuilder: (context, index) {
+          final res = _resources[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            elevation: 1.5,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.between,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          res.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF004D40),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.teal.shade200),
+                        ),
+                        child: Text(
+                          res.category,
+                          style: TextStyle(fontSize: 11, color: Colors.teal.shade800, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    res.description,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
+                      const SizedBox(width: 6),
+                      Text(
+                        res.contactInfo,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
