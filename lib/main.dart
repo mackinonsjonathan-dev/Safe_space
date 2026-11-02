@@ -263,6 +263,18 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
   }
 }
 
+class CommentItem {
+  final String author;
+  final String time;
+  final String content;
+
+  CommentItem({
+    required this.author,
+    required this.time,
+    required this.content,
+  });
+}
+
 class PostItem {
   final String author;
   final String category;
@@ -270,6 +282,7 @@ class PostItem {
   final String content;
   int likes;
   bool isLiked;
+  List<CommentItem> comments;
 
   PostItem({
     required this.author,
@@ -278,7 +291,8 @@ class PostItem {
     required this.content,
     required this.likes,
     this.isLiked = false,
-  });
+    List<CommentItem>? comments,
+  }) : comments = comments ?? [];
 }
 
 class HomeScreen extends StatefulWidget {
@@ -294,29 +308,40 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _newPostController = TextEditingController();
 
-  final List<PostItem> _posts = [
-    PostItem(
-      author: 'Jonathan M.',
-      category: 'Mechanics & Tech',
-      time: '10m ago',
-      content: 'Just completed a 150cc pushrod engine setup! Testing compression and smooth ignition timing today. Any tips on optimizing carburetor jetting for highland altitudes?',
-      likes: 12,
-    ),
-    PostItem(
-      author: 'Amina K.',
-      category: 'Business & Trade',
-      time: '1h ago',
-      content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in the North Rift region. Drop recommendations below!',
-      likes: 8,
-    ),
-    PostItem(
-      author: 'Safe Space Team',
-      category: 'General',
-      time: '3h ago',
-      content: 'Karibu Safe Space Kenya! 🇰🇪 Connect with fellow mechanics, builders, and entrepreneurs across the country.',
-      likes: 25,
-    ),
-  ];
+  late final List<PostItem> _posts;
+
+  @override
+  void initState() {
+    super.initState();
+    _posts = [
+      PostItem(
+        author: 'Jonathan M.',
+        category: 'Mechanics & Tech',
+        time: '10m ago',
+        content: 'Just completed a 150cc pushrod engine setup! Testing compression and smooth ignition timing today. Any tips on optimizing carburetor jetting for highland altitudes?',
+        likes: 12,
+        comments: [
+          CommentItem(author: 'Peter K.', time: '5m ago', content: 'Try dropping the main jet size by one step to compensate for thinner air at higher altitudes!'),
+        ],
+      ),
+      PostItem(
+        author: 'Amina K.',
+        category: 'Business & Trade',
+        time: '1h ago',
+        content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in the North Rift region. Drop recommendations below!',
+        likes: 8,
+        comments: [],
+      ),
+      PostItem(
+        author: 'Safe Space Team',
+        category: 'General',
+        time: '3h ago',
+        content: 'Karibu Safe Space Kenya! 🇰🇪 Connect with fellow mechanics, builders, and entrepreneurs across the country.',
+        likes: 25,
+        comments: [],
+      ),
+    ];
+  }
 
   void _addPost(BuildContext sheetContext) {
     if (_newPostController.text.trim().isEmpty) return;
@@ -387,6 +412,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openPostDetail(PostItem post) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PostDetailScreen(
+          post: post,
+          currentUser: widget.userName,
+          onCommentAdded: () => setState(() {}),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredPosts = _selectedCategory == 'All'
@@ -446,88 +483,286 @@ class _HomeScreenState extends State<HomeScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   elevation: 1.5,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: const Color(0xFF004D40),
-                              radius: 18,
-                              child: Text(
-                                post.author[0],
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _openPostDetail(post),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF004D40),
+                                radius: 18,
+                                child: Text(
+                                  post.author[0],
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    post.author,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                  ),
-                                  Text(
-                                    '${post.category} • ${post.time}',
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          post.content,
-                          style: const TextStyle(fontSize: 14, height: 1.4),
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  post.isLiked = !post.isLiked;
-                                  post.likes += post.isLiked ? 1 : -1;
-                                });
-                              },
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    post.isLiked ? Icons.favorite : Icons.favorite_border,
-                                    color: post.isLiked ? Colors.red : Colors.grey,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${post.likes}',
-                                    style: TextStyle(
-                                      color: post.isLiked ? Colors.red : Colors.grey.shade700,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      post.author,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                     ),
-                                  ),
-                                ],
+                                    Text(
+                                      '${post.category} • ${post.time}',
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 24),
-                            const Row(
-                              children: [
-                                Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
-                                SizedBox(width: 4),
-                                Text('Reply', style: TextStyle(color: Colors.grey)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            post.content,
+                            style: const TextStyle(fontSize: 14, height: 1.4),
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    post.isLiked = !post.isLiked;
+                                    post.likes += post.isLiked ? 1 : -1;
+                                  });
+                                },
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      post.isLiked ? Icons.favorite : Icons.favorite_border,
+                                      color: post.isLiked ? Colors.red : Colors.grey,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${post.likes}',
+                                      style: TextStyle(
+                                        color: post.isLiked ? Colors.red : Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              InkWell(
+                                onTap: () => _openPostDetail(post),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${post.comments.length} ${post.comments.length == 1 ? 'Reply' : 'Replies'}',
+                                      style: const TextStyle(color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PostDetailScreen extends StatefulWidget {
+  final PostItem post;
+  final String currentUser;
+  final VoidCallback onCommentAdded;
+
+  const PostDetailScreen({
+    super.key,
+    required this.post,
+    required this.currentUser,
+    required this.onCommentAdded,
+  });
+
+  @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> {
+  final TextEditingController _commentController = TextEditingController();
+
+  void _submitComment() {
+    if (_commentController.text.trim().isEmpty) return;
+
+    setState(() {
+      widget.post.comments.add(
+        CommentItem(
+          author: widget.currentUser,
+          time: 'Just now',
+          content: _commentController.text.trim(),
+        ),
+      );
+    });
+
+    widget.onCommentAdded();
+    _commentController.clear();
+    FocusScope.of(context).unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF004D40),
+        foregroundColor: Colors.white,
+        title: const Text('Post Discussion'),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFF004D40),
+                        radius: 20,
+                        child: Text(
+                          widget.post.author[0],
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.post.author,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          Text(
+                            '${widget.post.category} • ${widget.post.time}',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.post.content,
+                    style: const TextStyle(fontSize: 16, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Replies (${widget.post.comments.length})',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF004D40),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (widget.post.comments.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Center(
+                        child: Text(
+                          'No replies yet. Be the first to share your thoughts!',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: widget.post.comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = widget.post.comments[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.between,
+                                children: [
+                                  Text(
+                                    comment.author,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  Text(
+                                    comment.time,
+                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                comment.content,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  offset: const Offset(0, -2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _commentController,
+                    decoration: const InputDecoration(
+                      hintText: 'Write a reply...',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _submitComment,
+                  icon: const Icon(Icons.send, color: Color(0xFF004D40)),
+                ),
+              ],
             ),
           ),
         ],
@@ -578,7 +813,7 @@ class ResourcesHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
- backgroundColor: const Color(0xFF004D40),
+        backgroundColor: const Color(0xFF004D40),
         title: const Text('Trade & Supplier Hub 🇰🇪', style: TextStyle(color: Colors.white)),
       ),
       body: ListView.builder(
@@ -869,3 +1104,5 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+                                    
+            
