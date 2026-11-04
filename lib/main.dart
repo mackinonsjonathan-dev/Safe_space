@@ -229,6 +229,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
     final screens = [
       HomeScreen(phoneNumber: widget.phoneNumber, userName: _displayName),
       const ResourcesHubScreen(),
+      const DirectMessagesScreen(),
       ProfileScreen(
         phoneNumber: widget.phoneNumber,
         displayName: _displayName,
@@ -243,6 +244,8 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFF004D40),
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
@@ -254,6 +257,11 @@ class _MainNavigationContainerState extends State<MainNavigationContainer> {
             icon: Icon(Icons.folder_shared_outlined),
             activeIcon: Icon(Icons.folder_shared),
             label: 'Resources',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Messages',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -363,6 +371,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<PostItem> _posts = [];
   bool _isLoadingPosts = true;
 
+  final List<String> _quickEmojis = ['🔧', '⚙️', '🏍️', '🔥', '🇰🇪', '💯', '👍', '👏'];
+
   @override
   void initState() {
     super.initState();
@@ -381,29 +391,26 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoadingPosts = false;
         });
         return;
-      } catch (_) {
-        // Fallback to default posts if decoding fails
-      }
+      } catch (_) {}
     }
 
-    // Default seed posts
     setState(() {
       _posts = [
         PostItem(
           author: 'Jonathan M.',
           category: 'Mechanics & Tech',
           time: '10m ago',
-          content: 'Just completed a 150cc pushrod engine setup! Testing compression and smooth ignition timing today. Any tips on optimizing carburetor jetting for highland altitudes?',
+          content: 'Just completed a 150cc pushrod engine setup! 🔧 Testing compression and smooth ignition timing today. Any tips on carburetor jetting? ⚙️',
           likes: 12,
           comments: [
-            CommentItem(author: 'Peter K.', time: '5m ago', content: 'Try dropping the main jet size by one step to compensate for thinner air at higher altitudes!'),
+            CommentItem(author: 'Peter K.', time: '5m ago', content: 'Try dropping the main jet size by one step for high altitudes! 👍'),
           ],
         ),
         PostItem(
           author: 'Amina K.',
           category: 'Business & Trade',
           time: '1h ago',
-          content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in the North Rift region. Drop recommendations below!',
+          content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in North Rift. Drop recommendations! 🇰🇪',
           likes: 8,
           comments: [],
         ),
@@ -491,7 +498,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _quickEmojis.map((emoji) {
+                        return InkWell(
+                          onTap: () {
+                            _newPostController.text += emoji;
+                            setModalState(() {});
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+                            child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       OutlinedButton.icon(
@@ -500,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           setModalState(() {});
                         },
                         icon: const Icon(Icons.image, color: Color(0xFF004D40)),
-                        label: const Text('Add Image', style: TextStyle(color: Color(0xFF004D40))),
+                        label: const Text('Image', style: TextStyle(color: Color(0xFF004D40))),
                       ),
                       const SizedBox(width: 12),
                       OutlinedButton.icon(
@@ -509,7 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           setModalState(() {});
                         },
                         icon: const Icon(Icons.videocam, color: Color(0xFF004D40)),
-                        label: const Text('Add Video', style: TextStyle(color: Color(0xFF004D40))),
+                        label: const Text('Video', style: TextStyle(color: Color(0xFF004D40))),
                       ),
                     ],
                   ),
@@ -600,6 +625,16 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF004D40),
         title: const Text('Safe Space Community 🇰🇪', style: TextStyle(color: Colors.white)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreatePostSheet,
@@ -609,7 +644,7 @@ class _HomeScreenState extends State<HomeScreen> {
         label: const Text('New Post'),
       ),
       body: Column(
-       children: [
+        children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             color: Colors.grey.shade100,
@@ -805,6 +840,7 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
+  final List<String> _quickEmojis = ['👍', '🔥', '🔧', '👏', '💡', '🇰🇪'];
 
   void _submitComment() {
     if (_commentController.text.trim().isEmpty) return;
@@ -849,7 +885,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           widget.post.author.isNotEmpty ? widget.post.author[0] : 'S',
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
-                      ),const SizedBox(width: 12),
+                      ),
+                      const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -978,22 +1015,42 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: const InputDecoration(
-                      hintText: 'Write a reply...',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                  ),
+                Row(
+                  children: _quickEmojis.map((emoji) {
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _commentController.text += emoji;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12.0, bottom: 6.0),
+                        child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                      ),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _submitComment,
-                  icon: const Icon(Icons.send, color: Color(0xFF004D40)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _commentController,
+                        decoration: const InputDecoration(
+                          hintText: 'Write a reply...',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _submitComment,
+                      icon: const Icon(Icons.send, color: Color(0xFF004D40)),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1018,10 +1075,18 @@ class ResourceItem {
   });
 }
 
-class ResourcesHubScreen extends StatelessWidget {
+class ResourcesHubScreen extends StatefulWidget {
   const ResourcesHubScreen({super.key});
 
-  static const List<ResourceItem> _resources = [
+  @override
+  State<ResourcesHubScreen> createState() => _ResourcesHubScreenState();
+}
+
+class _ResourcesHubScreenState extends State<ResourcesHubScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  static const List<ResourceItem> _allResources = [
     ResourceItem(
       title: 'North Rift Spares & Hardware',
       category: 'Spare Parts',
@@ -1044,73 +1109,154 @@ class ResourcesHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final filteredResources = _allResources.where((res) {
+      final query = _searchQuery.toLowerCase();
+      return res.title.toLowerCase().contains(query) ||
+          res.category.toLowerCase().contains(query) ||
+          res.description.toLowerCase().contains(query) ||
+          res.contactInfo.toLowerCase().contains(query);
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF004D40),
         title: const Text('Trade & Supplier Hub 🇰🇪', style: TextStyle(color: Colors.white)),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _resources.length,
-        itemBuilder: (context, index) {
-          final res = _resources[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 1.5,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          res.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF004D40),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.teal.shade200),
-                        ),
-                        child: Text(
-                          res.category,
-                          style: TextStyle(fontSize: 11, color: Colors.teal.shade800, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    res.description,
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 6),
-                      Text(
-                        res.contactInfo,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val.trim()),
+              decoration: InputDecoration(
+                hintText: 'Search suppliers, parts, or towns...',
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF004D40)),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
+          ),
+          Expanded(
+            child: filteredResources.isEmpty
+                ? const Center(
+                    child: Text('No matching suppliers found.', style: TextStyle(color: Colors.grey)),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: filteredResources.length,
+                    itemBuilder: (context, index) {
+                      final res = filteredResources[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 1.5,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      res.title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF004D40),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.teal.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.teal.shade200),
+                                    ),
+                                    child: Text(
+                                      res.category,
+                                      style: TextStyle(fontSize: 11, color: Colors.teal.shade800, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                res.description,
+                                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                              ),
+                              const SizedBox(height: 12),
+                              const Divider(height: 1),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    res.contactInfo,
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DirectMessagesScreen extends StatelessWidget {
+  const DirectMessagesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final chats = [
+      {'name': 'Peter K.', 'message': 'Hey brother, do you have extra carburetor jet needles?', 'time': '12m ago'},
+      {'name': 'Amina K.', 'message': 'Thanks for the supplier contact info!', 'time': '2h ago'},
+      {'name': 'Safe Space Support', 'message': 'Karibu! Let us know if you need any app assistance.', 'time': '1d ago'},
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF004D40),
+        title: const Text('Direct Messages', style: TextStyle(color: Colors.white)),
+      ),
+      body: ListView.separated(
+        itemCount: chats.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final chat = chats[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: const Color(0xFF004D40),
+              child: Text(chat['name']![0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            title: Text(chat['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(chat['message']!, maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: Text(chat['time']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Opening chat with ${chat['name']}...')),
+              );
+            },
           );
         },
       ),
@@ -1118,7 +1264,44 @@ class ResourcesHubScreen extends StatelessWidget {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
+class NotificationsScreen extends StatelessWidget {
+  const NotificationsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final alerts = [
+      {'title': 'New Reply on Post', 'body': 'Peter K. commented on your pushrod engine setup post.', 'time': '5m ago'},
+      {'title': 'New Resource Added', 'body': 'North Rift Spares updated their catalog listing.', 'time': '1h ago'},
+      {'title': 'System Update', 'body': 'Safe Space Kenya version 1.0.0+1 is now live!', 'time': '1d ago'},
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF004D40),
+        foregroundColor: Colors.white,
+        title: const Text('Notifications'),
+      ),
+      body: ListView.separated(
+        itemCount: alerts.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final alert = alerts[index];
+          return ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFF00695C),
+              child: Icon(Icons.notifications, color: Colors.white, size: 20),
+            ),
+            title: Text(alert['title']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(alert['body']!),
+            trailing: Text(alert['time']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProfileScreen extends StatefulWidget {
   final String phoneNumber;
   final String displayName;
   final String tradeRole;
@@ -1134,10 +1317,43 @@ class ProfileScreen extends StatelessWidget {
     required this.onProfileUpdated,
   });
 
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPref();
+  }
+
+  Future<void> _loadNotificationPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+    });
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_enabled', value);
+    setState(() => _notificationsEnabled = value);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value ? 'Community alerts enabled!' : 'Community alerts muted.'),
+      ),
+    );
+  }
+
   void _showEditProfileDialog(BuildContext context) {
-    final nameController = TextEditingController(text: displayName);
-    final roleController = TextEditingController(text: tradeRole);
-    final locationController = TextEditingController(text: location);
+    final nameController = TextEditingController(text: widget.displayName);
+    final roleController = TextEditingController(text: widget.tradeRole);
+    final locationController = TextEditingController(text: widget.location);
 
     showDialog(
       context: context,
@@ -1185,10 +1401,10 @@ class ProfileScreen extends StatelessWidget {
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
-                onProfileUpdated(
-                  nameController.text.trim().isEmpty ? displayName : nameController.text.trim(),
-                  roleController.text.trim().isEmpty ? tradeRole : roleController.text.trim(),
-                  locationController.text.trim().isEmpty ? location : locationController.text.trim(),
+                widget.onProfileUpdated(
+                  nameController.text.trim().isEmpty ? widget.displayName : nameController.text.trim(),
+                  roleController.text.trim().isEmpty ? widget.tradeRole : roleController.text.trim(),
+                  locationController.text.trim().isEmpty ? widget.location : locationController.text.trim(),
                 );
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1205,7 +1421,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayPhone = phoneNumber.isEmpty ? '712345678' : phoneNumber;
+    final displayPhone = widget.phoneNumber.isEmpty ? '712345678' : widget.phoneNumber;
 
     return Scaffold(
       appBar: AppBar(
@@ -1232,7 +1448,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    displayName,
+                    widget.displayName,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -1241,7 +1457,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$tradeRole • $location',
+                    '${widget.tradeRole} • ${widget.location}',
                     style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                   ),
                   const SizedBox(height: 4),
@@ -1295,16 +1511,18 @@ class ProfileScreen extends StatelessWidget {
                         ListTile(
                           leading: const Icon(Icons.person_outline, color: Color(0xFF004D40)),
                           title: const Text('Edit Account Info'),
-                          subtitle: Text('$displayName • $tradeRole'),
+                          subtitle: Text('${widget.displayName} • ${widget.tradeRole}'),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => _showEditProfileDialog(context),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.notifications_none, color: Color(0xFF004D40)),
-                          title: const Text('Notifications'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {},
+                        SwitchListTile(
+                          secondary: const Icon(Icons.notifications_none, color: Color(0xFF004D40)),
+                          title: const Text('Push Notifications'),
+                          subtitle: const Text('Receive community alerts & replies'),
+                          value: _notificationsEnabled,
+                          activeColor: const Color(0xFF004D40),
+                          onChanged: _toggleNotifications,
                         ),
                       ],
                     ),
