@@ -446,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
@@ -578,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 backgroundColor: const Color(0xFF004D40),
                                 radius: 18,
                                 child: Text(
-                                post.author[0],
+                           post.author[0],
                                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -848,7 +848,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.between,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     comment.author,
@@ -972,7 +972,7 @@ class ResourcesHubScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
@@ -1080,8 +1080,8 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-               ),
+          ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
@@ -1245,4 +1245,3 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-     
