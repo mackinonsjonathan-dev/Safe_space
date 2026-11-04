@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -275,6 +276,20 @@ class CommentItem {
     required this.time,
     required this.content,
   });
+
+  Map<String, dynamic> toJson() => {
+        'author': author,
+        'time': time,
+        'content': content,
+      };
+
+  factory CommentItem.fromJson(Map<String, dynamic> json) {
+    return CommentItem(
+      author: json['author'] ?? '',
+      time: json['time'] ?? '',
+      content: json['content'] ?? '',
+    );
+  }
 }
 
 class PostItem {
@@ -299,6 +314,34 @@ class PostItem {
     this.isLiked = false,
     List<CommentItem>? comments,
   }) : comments = comments ?? [];
+
+  Map<String, dynamic> toJson() => {
+        'author': author,
+        'category': category,
+        'time': time,
+        'content': content,
+        'mediaPath': mediaFile?.path,
+        'isVideo': isVideo,
+        'likes': likes,
+        'isLiked': isLiked,
+        'comments': comments.map((c) => c.toJson()).toList(),
+      };
+
+  factory PostItem.fromJson(Map<String, dynamic> json) {
+    return PostItem(
+      author: json['author'] ?? '',
+      category: json['category'] ?? 'General',
+      time: json['time'] ?? '',
+      content: json['content'] ?? '',
+      mediaFile: json['mediaPath'] != null ? File(json['mediaPath']) : null,
+      isVideo: json['isVideo'] ?? false,
+      likes: json['likes'] ?? 0,
+      isLiked: json['isLiked'] ?? false,
+      comments: (json['comments'] as List<dynamic>? ?? [])
+          .map((c) => CommentItem.fromJson(c))
+          .toList(),
+    );
+  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -317,31 +360,63 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isMediaTypeVideo = false;
   final ImagePicker _picker = ImagePicker();
 
-  late final List<PostItem> _posts;
+  List<PostItem> _posts = [];
+  bool _isLoadingPosts = true;
 
   @override
   void initState() {
     super.initState();
-    _posts = [
-      PostItem(
-        author: 'Jonathan M.',
-        category: 'Mechanics & Tech',
-        time: '10m ago',
-        content: 'Just completed a 150cc pushrod engine setup! Testing compression and smooth ignition timing today. Any tips on optimizing carburetor jetting for highland altitudes?',
-        likes: 12,
-        comments: [
-          CommentItem(author: 'Peter K.', time: '5m ago', content: 'Try dropping the main jet size by one step to compensate for thinner air at higher altitudes!'),
-        ],
-      ),
-      PostItem(
-        author: 'Amina K.',
-        category: 'Business & Trade',
-        time: '1h ago',
-        content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in the North Rift region. Drop recommendations below!',
-        likes: 8,
-        comments: [],
-      ),
-    ];
+    _loadPosts();
+  }
+
+  Future<void> _loadPosts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? postsJsonString = prefs.getString('saved_community_posts');
+
+    if (postsJsonString != null) {
+      try {
+        final List<dynamic> decodedList = jsonDecode(postsJsonString);
+        setState(() {
+          _posts = decodedList.map((item) => PostItem.fromJson(item)).toList();
+          _isLoadingPosts = false;
+        });
+        return;
+      } catch (_) {
+        // Fallback to default posts if decoding fails
+      }
+    }
+
+    // Default seed posts
+    setState(() {
+      _posts = [
+        PostItem(
+          author: 'Jonathan M.',
+          category: 'Mechanics & Tech',
+          time: '10m ago',
+          content: 'Just completed a 150cc pushrod engine setup! Testing compression and smooth ignition timing today. Any tips on optimizing carburetor jetting for highland altitudes?',
+          likes: 12,
+          comments: [
+            CommentItem(author: 'Peter K.', time: '5m ago', content: 'Try dropping the main jet size by one step to compensate for thinner air at higher altitudes!'),
+          ],
+        ),
+        PostItem(
+          author: 'Amina K.',
+          category: 'Business & Trade',
+          time: '1h ago',
+          content: 'Looking for reliable spare parts suppliers for TVS HLX and Honda CB125 in the North Rift region. Drop recommendations below!',
+          likes: 8,
+          comments: [],
+        ),
+      ];
+      _isLoadingPosts = false;
+    });
+    _savePosts();
+  }
+
+  Future<void> _savePosts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedData = jsonEncode(_posts.map((p) => p.toJson()).toList());
+    await prefs.setString('saved_community_posts', encodedData);
   }
 
   Future<void> _pickMedia(bool isVideo) async {
@@ -375,6 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     });
 
+    _savePosts();
     _newPostController.clear();
     _selectedMediaFile = null;
     _isMediaTypeVideo = false;
@@ -499,7 +575,10 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => PostDetailScreen(
           post: post,
           currentUser: widget.userName,
-          onCommentAdded: () => setState(() {}),
+          onCommentAdded: () {
+            setState(() {});
+            _savePosts();
+          },
         ),
       ),
     );
@@ -507,6 +586,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingPosts) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF004D40))),
+      );
+    }
+
     final filteredPosts = _selectedCategory == 'All'
         ? _posts
         : _posts.where((post) => post.category == _selectedCategory).toList();
@@ -524,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
         label: const Text('New Post'),
       ),
       body: Column(
-        children: [
+       children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             color: Colors.grey.shade100,
@@ -555,138 +640,146 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: filteredPosts.length,
-              itemBuilder: (context, index) {
-                final post = filteredPosts[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 1.5,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => _openPostDetail(post),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: const Color(0xFF004D40),
-                                radius: 18,
-                                child: Text(
-                           post.author[0],
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post.author,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                    ),
-                                    Text(
-                                      '${post.category} • ${post.time}',
-                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (post.content.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              post.content,
-                              style: const TextStyle(fontSize: 14, height: 1.4),
-                            ),
-                          ],
-                          if (post.mediaFile != null) ...[
-                            const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: post.isVideo
-                                  ? Container(
-                                      height: 180,
-                                      width: double.infinity,
-                                      color: Colors.black87,
-                                      child: const Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.play_circle_fill, size: 50, color: Colors.white),
-                                            SizedBox(height: 8),
-                                            Text('Attached Video', style: TextStyle(color: Colors.white, fontSize: 12)),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                  : Image.file(
-                                      post.mediaFile!,
-                                      height: 200,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ],
-                          const SizedBox(height: 12),
-                          const Divider(height: 1),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    post.isLiked = !post.isLiked;
-                                    post.likes += post.isLiked ? 1 : -1;
-                                  });
-                                },
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      post.isLiked ? Icons.favorite : Icons.favorite_border,
-                                      color: post.isLiked ? Colors.red : Colors.grey,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${post.likes}',
-                                      style: TextStyle(
-                                        color: post.isLiked ? Colors.red : Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              InkWell(
-                                onTap: () => _openPostDetail(post),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${post.comments.length} ${post.comments.length == 1 ? 'Reply' : 'Replies'}',
-                                      style: const TextStyle(color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+            child: filteredPosts.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No posts in this category yet. Be the first to share!',
+                      style: TextStyle(color: Colors.grey),
                     ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: filteredPosts.length,
+                    itemBuilder: (context, index) {
+                      final post = filteredPosts[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 1.5,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _openPostDetail(post),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: const Color(0xFF004D40),
+                                      radius: 18,
+                                      child: Text(
+                                        post.author.isNotEmpty ? post.author[0] : 'S',
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            post.author,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                          ),
+                                          Text(
+                                            '${post.category} • ${post.time}',
+                                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (post.content.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    post.content,
+                                    style: const TextStyle(fontSize: 14, height: 1.4),
+                                  ),
+                                ],
+                                if (post.mediaFile != null && post.mediaFile!.existsSync()) ...[
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: post.isVideo
+                                        ? Container(
+                                            height: 180,
+                                            width: double.infinity,
+                                            color: Colors.black87,
+                                            child: const Center(
+                                              child: Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.play_circle_fill, size: 50, color: Colors.white),
+                                                  SizedBox(height: 8),
+                                                  Text('Attached Video', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                        : Image.file(
+                                            post.mediaFile!,
+                                            height: 200,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                const Divider(height: 1),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          post.isLiked = !post.isLiked;
+                                          post.likes += post.isLiked ? 1 : -1;
+                                        });
+                                        _savePosts();
+                                      },
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            post.isLiked ? Icons.favorite : Icons.favorite_border,
+                                            color: post.isLiked ? Colors.red : Colors.grey,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${post.likes}',
+                                            style: TextStyle(
+                                              color: post.isLiked ? Colors.red : Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 24),
+                                    InkWell(
+                                      onTap: () => _openPostDetail(post),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${post.comments.length} ${post.comments.length == 1 ? 'Reply' : 'Replies'}',
+                                            style: const TextStyle(color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -753,11 +846,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         backgroundColor: const Color(0xFF004D40),
                         radius: 20,
                         child: Text(
-                          widget.post.author[0],
+                          widget.post.author.isNotEmpty ? widget.post.author[0] : 'S',
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
-                      ),
-                      const SizedBox(width: 12),
+                      ),const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -780,7 +872,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       style: const TextStyle(fontSize: 16, height: 1.4),
                     ),
                   ],
-                  if (widget.post.mediaFile != null) ...[
+                  if (widget.post.mediaFile != null && widget.post.mediaFile!.existsSync()) ...[
                     const SizedBox(height: 16),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
@@ -1080,7 +1172,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ],
-          ),
+            ),
           ),
           actions: [
             TextButton(
@@ -1178,8 +1270,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+            ),const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
