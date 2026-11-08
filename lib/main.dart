@@ -5,9 +5,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://bdezpctylbajwxfhmmks.supabase.co',
+      publishableKey: 'YOUR_PUBLISHABLE_KEY',
+      );
+      
   runApp(const SafeSpaceApp());
 }
 
@@ -215,7 +222,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                   height: 64,
                   width: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.emerald.withOpacity(0.15),
+                    color: AppColors.emerald.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Icon(
@@ -1003,7 +1010,7 @@ class PostCard extends StatelessWidget {
                 vertical: 6,
               ),
               decoration: BoxDecoration(
-                color: AppColors.emerald.withOpacity(0.12),
+                color: AppColors.emerald.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -1700,7 +1707,7 @@ class _ResourcesHubScreenState extends State<ResourcesHubScreen> {
                       height: 48,
                       width: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.emerald.withOpacity(0.13),
+                        color: AppColors.emerald.withValues(alpha: 0.13),
                         borderRadius: BorderRadius.circular(13),
                       ),
                       child: Icon(
@@ -1907,7 +1914,7 @@ class NotificationsScreen extends StatelessWidget {
               contentPadding: const EdgeInsets.all(12),
               leading: CircleAvatar(
                 backgroundColor:
-                    AppColors.emerald.withOpacity(0.15),
+                    AppColors.emerald.withValues(alpha: 0.15),
                 child: Icon(
                   item['icon'] as IconData,
                   color: AppColors.emerald,
