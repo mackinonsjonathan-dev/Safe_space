@@ -6,16 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/app_theme.dart';
+import 'core/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://bdezpctylbajwxfhmmks.supabase.co',
-      publishableKey: 'YOUR_PUBLISHABLE_KEY',
-      );
-      
-  runApp(const SafeSpaceApp());
+  await SupabaseService.initialize();
+
+runApp(const SafeSpaceApp());
 }
 
 // ============================================================
