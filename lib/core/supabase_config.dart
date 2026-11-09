@@ -3,5 +3,5 @@ class SupabaseConfig {
       'https://bdezpctylbajwxfhmmks.supabase.co';
 
   static const String publishableKey =
-      'YOUR_PUBLISHABLE_KEY';
+      'sb_publishable_K7vJuQSySSz53i7AUvyxwA_a_8vIJcJ';
 }
