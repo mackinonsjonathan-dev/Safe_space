@@ -9,13 +9,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_theme.dart';
 import 'core/supabase_service.dart';
 import 'core/app_colors.dart';
+import 'features/auth/phone_auth_screen.dart' as auth;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await SupabaseService.initialize();
 
-runApp(const SafeSpaceApp());
+  runApp(const SafeSpaceApp());
 }
 
 // ============================================================
@@ -30,8 +31,17 @@ class SafeSpaceApp extends StatelessWidget {
     return MaterialApp(
       title: 'Safe Space',
       debugShowCheckedModeBanner: false,
-           theme: AppTheme.darkTheme,
-      home: const PhoneAuthScreen(),
+      theme: AppTheme.darkTheme,
+      home: auth.PhoneAuthScreen(
+        onAuthenticated: (context) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MainNavigationContainer(),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -176,91 +186,8 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                     fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 48),
-                const Text(
-                  'Your community starts here.',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Connect, share ideas, discover opportunities '
-                  'and build meaningful communities.',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.phone_outlined),
-                    labelText: 'Phone number',
-                    hintText: '+254...',
-                  ),
-                ),
-                if (otpRequested) ...[
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.lock_outline),
-                      labelText: 'Demo OTP',
-                      hintText: 'Enter 123456',
-                      counterText: '',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton(
-                    onPressed: loading
-                        ? null
-                        : otpRequested
-                            ? verifyOtp
-                            : requestOtp,
-                    child: loading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            otpRequested
-                                ? 'Verify and continue'
-                                : 'Continue',
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Center(
-                  child: Text(
-                    'Prototype login — no SMS is sent yet.',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
+                
 // ============================================================
 // POST AND COMMENT MODELS
 // ============================================================
@@ -491,22 +418,30 @@ class _MainNavigationContainerState
         profile: profile,
         onProfileUpdated: saveProfile,
         onLogout: () async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('is_logged_in', false);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('is_logged_in', false);
 
-          if (!mounted) return;
+  if (!mounted) return;
 
-          Navigator.pushAndRemoveUntil(
-            context,
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => auth.PhoneAuthScreen(
+        onAuthenticated: (authContext) {
+          Navigator.pushReplacement(
+            authContext,
             MaterialPageRoute(
-              builder: (_) => const PhoneAuthScreen(),
+              builder: (_) => const MainNavigationContainer(),
             ),
-            (route) => false,
           );
         },
       ),
-    ];
-
+    ),
+    (route) => false,
+  );
+},
+),
+      ];
     return Scaffold(
       body: IndexedStack(
         index: currentIndex,
