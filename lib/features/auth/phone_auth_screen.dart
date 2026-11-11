@@ -18,6 +18,7 @@ class PhoneAuthScreen extends StatefulWidget {
 
 class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   final phoneController = TextEditingController();
+  final emailController = TextEditingController();
   final otpController = TextEditingController();
 
   bool otpRequested = false;
@@ -26,6 +27,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   @override
   void dispose() {
     phoneController.dispose();
+    emailController.dispose();
     otpController.dispose();
     super.dispose();
   }
