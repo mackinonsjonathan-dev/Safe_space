@@ -23,6 +23,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
   bool otpRequested = false;
   bool loading = false;
+  bool isEmailMode = true;
 
   @override
   void dispose() {
