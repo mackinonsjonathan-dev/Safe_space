@@ -125,8 +125,30 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                     height: 1.5,
                   ),
                 ),
+
+                Wrap(
+  spacing: 10,
+  children: [
+    ChoiceChip(
+      label: const Text('Email'),
+      selected: isEmailMode,
+      onSelected: (_) {
+        setState(() => isEmailMode = true);
+      },
+    ),
+    ChoiceChip(
+      label: const Text('Phone'),
+      selected: !isEmailMode,
+      onSelected: (_) {
+        setState(() => isEmailMode = false);
+      },
+    ),
+  ],
+),
+
+const SizedBox(height: 20),
                 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
                 TextField(
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
