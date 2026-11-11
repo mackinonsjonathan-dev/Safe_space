@@ -5,7 +5,12 @@ import '../../core/app_colors.dart';
 import '../../main.dart';
 
 class PhoneAuthScreen extends StatefulWidget {
-  const PhoneAuthScreen({super.key});
+  final ValueChanged<BuildContext> onAuthenticated;
+
+  const PhoneAuthScreen({
+    super.key,
+    required this.onAuthenticated,
+  });
 
   @override
   State<PhoneAuthScreen> createState() => _PhoneAuthScreenState();
@@ -58,12 +63,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainNavigationContainer(),
-      ),
-    );
+    widget.onAuthenticated(context);
   }
 
   @override
