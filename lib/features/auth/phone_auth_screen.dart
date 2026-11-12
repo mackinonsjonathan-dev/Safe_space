@@ -34,9 +34,16 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   }
 
   Future<void> requestOtp() async {
-    if (phoneController.text.trim().isEmpty) {
-      showMessage(context, 'Enter your phone number.');
-      return;
+    if (isEmailMode) {
+  if (emailController.text.trim().isEmpty) {
+    showMessage(context, 'Enter your email address.');
+    return;
+  }
+} else {
+  if (phoneController.text.trim().isEmpty) {
+    showMessage(context, 'Enter your phone number.');
+    return;
+  }
     }
 
     setState(() => loading = true);
