@@ -149,26 +149,29 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 const SizedBox(height: 20),
                 
                 const SizedBox(height: 10),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.phone_outlined),
-                    labelText: 'Phone number',
-                    hintText: '+254...',
-                  ),
-                ),
-                const SizedBox(height: 16),
 
-              TextField(
-                 controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.email_outlined),
-                    labelText: 'Email address',
-                    hintText: 'you@example.com',
-                  ),
-                ),
+if (isEmailMode)
+  TextField(
+    controller: emailController,
+    keyboardType: TextInputType.emailAddress,
+    decoration: const InputDecoration(
+      prefixIcon: Icon(Icons.email_outlined),
+      labelText: 'Email address',
+      hintText: 'you@example.com',
+    ),
+  )
+else
+  TextField(
+    controller: phoneController,
+    keyboardType: TextInputType.phone,
+    decoration: const InputDecoration(
+      prefixIcon: Icon(Icons.phone_outlined),
+      labelText: 'Phone number',
+      hintText: '+254...',
+    ),
+  ),
+
+const SizedBox(height: 16),
                 if (otpRequested) ...[
                   const SizedBox(height: 16),
                   TextField(
