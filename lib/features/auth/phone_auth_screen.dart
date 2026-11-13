@@ -206,6 +206,7 @@ Future<void> requestOtp() async {
     otpController.clear();
   });
 },
+      ),
     ChoiceChip(
       label: const Text('Phone'),
       selected: !isEmailMode,
