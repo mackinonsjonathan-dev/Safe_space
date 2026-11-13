@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_colors.dart';
 import '../../main.dart';
@@ -51,7 +52,11 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
     setState(() => loading = true);
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    if (isEmailMode) {
+  try {
+    await Supabase.instance.client.auth.signInWithOtp(
+      email: emailController.text.trim(),
+    );
 
     if (!mounted) return;
 
@@ -60,8 +65,30 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       otpRequested = true;
     });
 
-    showMessage(context, 'Demo mode: use OTP 123456.');
+    showMessage(context, 'Check your email for your login code.');
+  } on AuthException catch (error) {
+    if (!mounted) return;
+
+    setState(() => loading = false);
+    showMessage(context, error.message);
+  } catch (error) {
+    if (!mounted) return;
+
+    setState(() => loading = false);
+    showMessage(context, 'Unable to send the email code. Try again.');
   }
+} else {
+  await Future.delayed(const Duration(milliseconds: 700));
+
+  if (!mounted) return;
+
+  setState(() {
+    loading = false;
+    otpRequested = true;
+  });
+
+  showMessage(context, 'Demo mode: use OTP 123456.');
+    }
 
   Future<void> verifyOtp() async {
     if (otpController.text.trim() != '123456') {
