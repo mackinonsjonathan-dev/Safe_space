@@ -29,6 +29,9 @@ jobs:
           if [ ! -d "android" ]; then
             flutter create . --platforms=android
           fi
+                - name: Check Android Internet Permission
+        run: |
+          grep -n "android.permission.INTERNET" android/app/src/main/AndroidManifest.xml
 
       - name: Get dependencies
         run: flutter pub get
