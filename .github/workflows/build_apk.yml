@@ -30,9 +30,14 @@ jobs:
             flutter create . --platforms=android
           fi
 
-      - name: Check Android Internet Permission
-        run: |
-          grep -n "android.permission.INTERNET" android/app/src/main/AndroidManifest.xml || echo "INTERNET permission not found"
+      - name: Ensure Android Internet Permission
+      
+       run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
+          fi
+          grep -n "android.permission.INTERNET" "$MANIFEST"
 
       - name: Get dependencies
         run: flutter pub get
