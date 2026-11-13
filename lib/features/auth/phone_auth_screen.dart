@@ -26,38 +26,87 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   bool otpRequested = false;
   bool loading = false;
   bool isEmailMode = true;
+  bool isSignUp = false;
 
   @override
   void dispose() {
     phoneController.dispose();
     emailController.dispose();
     otpController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> requestOtp() async {
-        if (isEmailMode) {
-      final email = emailController.text.trim();
+  
+Future<void> requestOtp() async {
+  if (isEmailMode) {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
 
-      if (email.isEmpty ||
-          !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-        showMessage(context, 'Enter a valid email address.');
-        return;
-      }
-    } else {
-      if (phoneController.text.trim().isEmpty) {
-        showMessage(context, 'Enter your phone number.');
-        return;
-      }
-        }
+    if (email.isEmpty ||
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+            .hasMatch(email)) {
+      showMessage(context, 'Enter a valid email address.');
+      return;
+    }
+
+    if (password.length < 6) {
+      showMessage(context, 'Password must be at least 6 characters.');
+      return;
+    }
 
     setState(() => loading = true);
 
-    if (isEmailMode) {
-  try {
-    await Supabase.instance.client.auth.signInWithOtp(
-      email: emailController.text.trim(),
-    );
+    try {
+      if (isSignUp) {
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+        );
+
+        if (!mounted) return;
+
+        setState(() => loading = false);
+
+        if (response.session != null) {
+          widget.onAuthenticated(context);
+        } else {
+          showMessage(
+            context,
+            'Account created. Check your email to confirm your account.',
+          );
+        }
+      } else {
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+
+        if (!mounted) return;
+
+        setState(() => loading = false);
+        widget.onAuthenticated(context);
+      }
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      setState(() => loading = false);
+      showMessage(context, error.message);
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() => loading = false);
+      showMessage(context, 'Authentication failed. Please try again.');
+    }
+  } else {
+    if (phoneController.text.trim().isEmpty) {
+      showMessage(context, 'Enter your phone number.');
+      return;
+    }
+
+    setState(() => loading = true);
+
+    await Future.delayed(const Duration(milliseconds: 700));
 
     if (!mounted) return;
 
@@ -66,31 +115,10 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       otpRequested = true;
     });
 
-    showMessage(context, 'Check your email for your login code.');
-  } on AuthException catch (error) {
-    if (!mounted) return;
-
-    setState(() => loading = false);
-    showMessage(context, error.message);
-  } catch (error) {
-    if (!mounted) return;
-
-    setState(() => loading = false);
-    showMessage(context, 'Unable to send the email code. Try again.');
+    showMessage(context, 'Demo mode: use OTP 123456.');
   }
-} else {
-  await Future.delayed(const Duration(milliseconds: 700));
-
-  if (!mounted) return;
-
-  setState(() {
-    loading = false;
-    otpRequested = true;
-  });
-
-  showMessage(context, 'Demo mode: use OTP 123456.');
-    }
-  }
+}
+  
 
   Future<void> verifyOtp() async {
     if (otpController.text.trim() != '123456') {
@@ -172,24 +200,50 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
       label: const Text('Email'),
       selected: isEmailMode,
       onSelected: (_) {
-        setState(() => isEmailMode = true);
-      },
-    ),
+  setState(() {
+    isEmailMode = true;
+    otpRequested = false;
+    otpController.clear();
+  });
+},
     ChoiceChip(
       label: const Text('Phone'),
       selected: !isEmailMode,
       onSelected: (_) {
-        setState(() => isEmailMode = false);
-      },
+  setState(() {
+    isEmailMode = false;
+    otpRequested = false;
+    otpController.clear();
+  });
+},
     ),
   ],
 ),
+                if (isEmailMode) ...[
+  const SizedBox(height: 16),
+  Wrap(
+    spacing: 10,
+    children: [
+      ChoiceChip(
+        label: const Text('Sign In'),
+        selected: !isSignUp,
+        onSelected: (_) {
+          setState(() => isSignUp = false);
+        },
+      ),
+      ChoiceChip(
+        label: const Text('Create Account'),
+        selected: isSignUp,
+        onSelected: (_) {
+          setState(() => isSignUp = true);
+        },
+      ),
+    ],
+  ),
+],
+const SizedBox(height: 16),
 
-const SizedBox(height: 20),
-                
-                const SizedBox(height: 10),
-
-if (isEmailMode)
+if (isEmailMode) ...[
   TextField(
     controller: emailController,
     keyboardType: TextInputType.emailAddress,
@@ -198,8 +252,17 @@ if (isEmailMode)
       labelText: 'Email address',
       hintText: 'you@example.com',
     ),
-  )
-else
+  ),
+  const SizedBox(height: 16),
+  TextField(
+    controller: passwordController,
+    obscureText: true,
+    decoration: const InputDecoration(
+      prefixIcon: Icon(Icons.lock_outline),
+      labelText: 'Password',
+    ),
+  ),
+] else
   TextField(
     controller: phoneController,
     keyboardType: TextInputType.phone,
@@ -211,7 +274,7 @@ else
   ),
 
 const SizedBox(height: 16),
-                if (otpRequested) ...[
+                if (!isEmailMode && otpRequested) ...[
                   const SizedBox(height: 16),
                   TextField(
                     controller: otpController,
@@ -230,11 +293,11 @@ const SizedBox(height: 16),
                   width: double.infinity,
                   height: 52,
                   child: FilledButton(
-                    onPressed: loading
-                        ? null
-                        : otpRequested
-                            ? verifyOtp
-                            : requestOtp,
+                     onPressed: loading
+    ? null
+    : (!isEmailMode && otpRequested)
+        ? verifyOtp
+        : requestOtp,
                     child: loading
                         ? const SizedBox(
                             height: 22,
@@ -244,22 +307,18 @@ const SizedBox(height: 16),
                             ),
                           )
                         : Text(
-                            otpRequested
-                                ? 'Verify and continue'
-                                : 'Continue',
-                          ),
+    (!isEmailMode && otpRequested)
+        ? 'Verify and continue'
+        : isEmailMode
+            ? (isSignUp ? 'Create Account' : 'Sign In')
+            : 'Continue',
+),
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Center(
-                  child: Text(
-                    'Prototype login — no SMS is sent yet.',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+                
+                  
+                
               ],
             ),
           ),
