@@ -21,6 +21,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
   final otpController = TextEditingController();
+  final passwordController = TextEditingController();
 
   bool otpRequested = false;
   bool loading = false;
@@ -89,6 +90,7 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
 
   showMessage(context, 'Demo mode: use OTP 123456.');
     }
+  }
 
   Future<void> verifyOtp() async {
     if (otpController.text.trim() != '123456') {
