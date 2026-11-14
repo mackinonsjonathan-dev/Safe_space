@@ -10,6 +10,7 @@ import 'core/app_theme.dart';
 import 'core/supabase_service.dart';
 import 'core/app_colors.dart';
 import 'features/auth/phone_auth_screen.dart' as auth;
+import 'package:flutter/services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
