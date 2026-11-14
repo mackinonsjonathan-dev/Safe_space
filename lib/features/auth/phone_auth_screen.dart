@@ -60,9 +60,10 @@ Future<void> requestOtp() async {
     try {
       if (isSignUp) {
         final response = await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-        );
+  email: email,
+  password: password,
+  emailRedirectTo: 'safespace://auth-callback',
+);
 
         if (!mounted) return;
 
