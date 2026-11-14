@@ -33,7 +33,9 @@ class SafeSpaceApp extends StatelessWidget {
       title: 'Safe Space',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: auth.PhoneAuthScreen(
+      home: Supabase.instance.client.auth.currentSession != null
+    ? const MainNavigationContainer()
+    : auth.PhoneAuthScreen(
         onAuthenticated: (context) {
           Navigator.pushReplacement(
             context,
