@@ -38,6 +38,19 @@ jobs:
           fi
           grep -n "android.permission.INTERNET" "$MANIFEST"
 
+      - name: Configure Safe Space Deep Link
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+            sed -i '/<activity/,/<\/activity>/{
+              /<\/activity>/i\
+                    <intent-filter>\
+                        <action android:name="android.intent.action.VIEW"/>\
+                        <category android:name="android.intent.category.DEFAULT"/>\
+                        <category android:name="android.intent.category.BROWSABLE"/>\
+                        <data android:scheme="safespace" android:host="auth-callback"/>\
+                    </intent-filter>
+            }' "$MANIFEST"
+
       - name: Get dependencies
         run: flutter pub get
 
