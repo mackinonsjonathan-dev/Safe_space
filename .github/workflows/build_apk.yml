@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -30,6 +30,21 @@ jobs:
           if [ ! -d "android" ]; then
             flutter create . --platforms=android
           fi
+
+              - name: Configure Android release signing
+                      env:
+                                ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+                                          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+                                                    ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+                                                              ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+                                                                      run: |
+                                                                                echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+                                                                                          cat > android/key.properties <<EOF
+                                                                                                    storePassword=$ANDROID_KEYSTORE_PASSWORD
+                                                                                                              keyPassword=$ANDROID_KEY_PASSWORD
+                                                                                                                        keyAlias=$ANDROID_KEY_ALIAS
+                                                                                                                                  storeFile=app/upload-keystore.jks
+                                                                                                                                            EOF  
 
       - name: Get dependencies
         run: flutter pub get
