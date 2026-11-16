@@ -6,33 +6,23 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/app_theme.dart';
+import 'core/supabase_service.dart';
+import 'core/app_colors.dart';
+import 'features/auth/phone_auth_screen.dart' as auth;
+import 'package:flutter/services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://bdezpctylbajwxfhmmks.supabase.co',
-      publishableKey: 'YOUR_PUBLISHABLE_KEY',
-      );
-      
+  await SupabaseService.initialize();
+
   runApp(const SafeSpaceApp());
 }
 
 // ============================================================
 // APP THEME
 // ============================================================
-
-class AppColors {
-  static const background = Color(0xFF0F1513);
-  static const surface = Color(0xFF18221F);
-  static const surfaceLight = Color(0xFF202C27);
-  static const emerald = Color(0xFF00A878);
-  static const emeraldDark = Color(0xFF087653);
-  static const text = Color(0xFFF1F5F2);
-  static const muted = Color(0xFF91A39A);
-  static const border = Color(0xFF293832);
-  static const danger = Color(0xFFE57373);
-}
 
 class SafeSpaceApp extends StatelessWidget {
   const SafeSpaceApp({super.key});
@@ -42,70 +32,22 @@ class SafeSpaceApp extends StatelessWidget {
     return MaterialApp(
       title: 'Safe Space',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.emerald,
-          secondary: Color(0xFF6ED6AC),
-          surface: AppColors.surface,
-          error: AppColors.danger,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.text,
-          elevation: 0,
-          centerTitle: false,
-        ),
-        cardTheme: CardThemeData(
-          color: AppColors.surface,
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.border),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.surfaceLight,
-          hintStyle: const TextStyle(color: AppColors.muted),
-          labelStyle: const TextStyle(color: AppColors.muted),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: AppColors.emerald,
-              width: 1.5,
+      theme: AppTheme.darkTheme,
+      home: Supabase.instance.client.auth.currentSession != null
+    ? const MainNavigationContainer()
+    : auth.PhoneAuthScreen(
+        onAuthenticated: (context) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MainNavigationContainer(),
             ),
-          ),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          backgroundColor: AppColors.surfaceLight,
-          contentTextStyle: TextStyle(color: AppColors.text),
-        ),
-        bottomNavigationBarTheme:
-            const BottomNavigationBarThemeData(
-          backgroundColor: AppColors.surface,
-          selectedItemColor: AppColors.emerald,
-          unselectedItemColor: AppColors.muted,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-        ),
+          );
+        },
       ),
-      home: const PhoneAuthScreen(),
     );
   }
 }
-
 // ============================================================
 // USER PROFILE MODEL
 // ============================================================
@@ -139,196 +81,6 @@ class UserProfile {
       'location': location,
       'bio': bio,
     };
-  }
-}
-
-// ============================================================
-// LOGIN SCREEN - DEMO OTP
-// ============================================================
-
-class PhoneAuthScreen extends StatefulWidget {
-  const PhoneAuthScreen({super.key});
-
-  @override
-  State<PhoneAuthScreen> createState() => _PhoneAuthScreenState();
-}
-
-class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
-  final phoneController = TextEditingController();
-  final otpController = TextEditingController();
-
-  bool otpRequested = false;
-  bool loading = false;
-
-  @override
-  void dispose() {
-    phoneController.dispose();
-    otpController.dispose();
-    super.dispose();
-  }
-
-  Future<void> requestOtp() async {
-    if (phoneController.text.trim().isEmpty) {
-      showMessage(context, 'Enter your phone number.');
-      return;
-    }
-
-    setState(() => loading = true);
-
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (!mounted) return;
-
-    setState(() {
-      loading = false;
-      otpRequested = true;
-    });
-
-    showMessage(context, 'Demo mode: use OTP 123456.');
-  }
-
-  Future<void> verifyOtp() async {
-    if (otpController.text.trim() != '123456') {
-      showMessage(context, 'Incorrect demo OTP.');
-      return;
-    }
-
-    setState(() => loading = true);
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', true);
-
-    if (!mounted) return;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainNavigationContainer(),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 64,
-                  width: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.emerald.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const Icon(
-                    Icons.people_alt_rounded,
-                    color: AppColors.emerald,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                const Text(
-                  'Safe Space',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Born in Kenya. Built for the world.',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                const Text(
-                  'Your community starts here.',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Connect, share ideas, discover opportunities '
-                  'and build meaningful communities.',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.phone_outlined),
-                    labelText: 'Phone number',
-                    hintText: '+254...',
-                  ),
-                ),
-                if (otpRequested) ...[
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.lock_outline),
-                      labelText: 'Demo OTP',
-                      hintText: 'Enter 123456',
-                      counterText: '',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton(
-                    onPressed: loading
-                        ? null
-                        : otpRequested
-                            ? verifyOtp
-                            : requestOtp,
-                    child: loading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            otpRequested
-                                ? 'Verify and continue'
-                                : 'Continue',
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Center(
-                  child: Text(
-                    'Prototype login — no SMS is sent yet.',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -562,22 +314,30 @@ class _MainNavigationContainerState
         profile: profile,
         onProfileUpdated: saveProfile,
         onLogout: () async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('is_logged_in', false);
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('is_logged_in', false);
 
-          if (!mounted) return;
+  if (!mounted) return;
 
-          Navigator.pushAndRemoveUntil(
-            context,
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      builder: (_) => auth.PhoneAuthScreen(
+        onAuthenticated: (authContext) {
+          Navigator.pushReplacement(
+            authContext,
             MaterialPageRoute(
-              builder: (_) => const PhoneAuthScreen(),
+              builder: (_) => const MainNavigationContainer(),
             ),
-            (route) => false,
           );
         },
       ),
-    ];
-
+    ),
+    (route) => false,
+  );
+},
+),
+      ];
     return Scaffold(
       body: IndexedStack(
         index: currentIndex,
