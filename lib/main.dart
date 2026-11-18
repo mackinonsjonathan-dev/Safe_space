@@ -314,8 +314,7 @@ class _MainNavigationContainerState
         profile: profile,
         onProfileUpdated: saveProfile,
         onLogout: () async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool('is_logged_in', false);
+  await Supabase.instance.client.auth.signOut();
 
   if (!mounted) return;
 
@@ -336,7 +335,7 @@ class _MainNavigationContainerState
     (route) => false,
   );
 },
-),
+      ),
       ];
     return Scaffold(
       body: IndexedStack(
