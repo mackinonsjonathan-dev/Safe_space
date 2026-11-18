@@ -316,7 +316,7 @@ class _MainNavigationContainerState
         onLogout: () async {
   await Supabase.instance.client.auth.signOut();
 
-  if (!mounted) return;
+  if (!context.mounted) return;
 
   Navigator.pushAndRemoveUntil(
     context,
