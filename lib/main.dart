@@ -10,7 +10,7 @@ import 'core/app_theme.dart';
 import 'core/supabase_service.dart';
 import 'core/app_colors.dart';
 import 'features/auth/phone_auth_screen.dart' as auth;
-import 'features/posts/post_service.dart';
+import 'features/Posts/Post_service.dart';
 
 
 Future<void> main() async {
