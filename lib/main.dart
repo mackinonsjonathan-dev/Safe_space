@@ -208,10 +208,11 @@ class _MainNavigationContainerState
   final PostService postService = PostService();
 
   @override
-  void initState() {
-    super.initState();
-    loadData();
-  }
+void initState() {
+  super.initState();
+  loadData();
+  loadPostsFromSupabase();
+}
 
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
