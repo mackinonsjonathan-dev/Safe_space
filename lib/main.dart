@@ -256,11 +256,41 @@ void initState() {
   try {
     final data = await postService.fetchPosts();
 
-    print('Supabase posts fetched: ${data.length}');
+    final List<PostItem> supabasePosts = data.map((item) {
+      final authorProfile =
+          item['profiles'] as Map<String, dynamic>?;
+
+      return PostItem(
+        id: item['id'].toString(),
+        author: authorProfile?['display_name'] ??
+            authorProfile?['username'] ??
+            'Member',
+        role: 'Community Member',
+        location: 'Kenya',
+        category: item['category'] ?? 'General',
+        content: item['content'] ?? '',
+        mediaPath: item['media_url'],
+        mediaType: item['media_type'] ?? 'none',
+        time: item['created_at']?.toString() ?? 'Recently',
+      );
+    }).toList();
+
+    if (!mounted) return;
+
+    setState(() {
+      final existingIds = posts.map((post) => post.id).toSet();
+
+      posts.insertAll(
+        0,
+        supabasePosts.where(
+          (post) => !existingIds.contains(post.id),
+        ),
+      );
+    });
   } catch (error) {
     print('Error loading Supabase posts: $error');
   }
-  }
+}
 
   Future<void> saveProfile(UserProfile updated) async {
     final prefs = await SharedPreferences.getInstance();
