@@ -4,7 +4,7 @@ import '../../core/supabase_service.dart';
 
 class PostService {
   final SupabaseClient _client = SupabaseService.client;
-}
+
 Future<List<Map<String, dynamic>>> fetchPosts() async {
   try {
     final response = await _client
@@ -29,3 +29,5 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
     throw Exception('Failed to fetch posts: $error');
   }
 }
+}
+
