@@ -205,6 +205,7 @@ class _MainNavigationContainerState
   );
 
   List<PostItem> posts = [];
+  final PostService postService = PostService();
 
   @override
   void initState() {
@@ -247,6 +248,16 @@ class _MainNavigationContainerState
       posts = loadedPosts;
       profileLoaded = true;
     });
+  }
+
+  Future<void> loadPostsFromSupabase() async {
+  try {
+    final data = await postService.fetchPosts();
+
+    print('Supabase posts fetched: ${data.length}');
+  } catch (error) {
+    print('Error loading Supabase posts: $error');
+  }
   }
 
   Future<void> saveProfile(UserProfile updated) async {
