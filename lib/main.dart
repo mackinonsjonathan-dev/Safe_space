@@ -210,8 +210,9 @@ class _MainNavigationContainerState
   @override
 void initState() {
   super.initState();
-  loadData();
-  loadPostsFromSupabase();
+  loadData().then((_) {
+    loadPostsFromSupabase();
+  });
 }
 
   Future<void> loadData() async {
