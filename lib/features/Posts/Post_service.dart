@@ -29,7 +29,7 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
     throw Exception('Failed to fetch posts: $error');
   }
 }
-  Future<void> createPost({
+  Future<String> createPost({
   required String content,
   required String category,
   String? mediaUrl,
@@ -42,13 +42,19 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
   }
 
   try {
-    await _client.from('posts').insert({
+    final response = await _client
+    .from('posts')
+    .insert({
       'author_id': user.id,
       'content': content,
       'category': category,
       'media_url': mediaUrl,
       'media_type': mediaType,
-    });
+    })
+    .select('id')
+    .single();
+
+return response['id'].toString();
   } catch (error) {
     throw Exception('Failed to publish post: $error');
   }
