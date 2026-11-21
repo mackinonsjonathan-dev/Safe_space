@@ -18,7 +18,7 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
           category,
           created_at,
           profiles!posts_author_id_fkey(
-            username,
+          username,
             display_name
           )
         ''')
@@ -29,5 +29,29 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
     throw Exception('Failed to fetch posts: $error');
   }
 }
+  Future<void> createPost({
+  required String content,
+  required String category,
+  String? mediaUrl,
+  String? mediaType,
+}) async {
+  final user = _client.auth.currentUser;
+
+  if (user == null) {
+    throw Exception('You must be logged in to publish a post.');
+  }
+
+  try {
+    await _client.from('posts').insert({
+      'author_id': user.id,
+      'content': content,
+      'category': category,
+      'media_url': mediaUrl,
+      'media_type': mediaType,
+    });
+  } catch (error) {
+    throw Exception('Failed to publish post: $error');
+  }
+  }
 }
 
