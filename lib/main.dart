@@ -1043,7 +1043,7 @@ Future<void> publishPost() async {
   }
 
   try {
-    final postId = await widget.postService.createPost(
+    final postId = await postService.createPost(
       content: contentController.text.trim(),
       category: category,
     );
