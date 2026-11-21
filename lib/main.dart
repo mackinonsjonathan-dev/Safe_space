@@ -987,6 +987,7 @@ class CreatePostSheet extends StatefulWidget {
 }
 
 class _CreatePostSheetState extends State<CreatePostSheet> {
+  final PostService postService = PostService();
   final contentController = TextEditingController();
   final picker = ImagePicker();
 
@@ -1025,29 +1026,51 @@ class _CreatePostSheetState extends State<CreatePostSheet> {
     }
   }
 
-  void publishPost() {
-    if (contentController.text.trim().isEmpty &&
-        selectedMedia == null) {
-      showMessage(context, 'Write something or select media first.');
-      return;
-    }
+  
+Future<void> publishPost() async {
+  if (contentController.text.trim().isEmpty &&
+      selectedMedia == null) {
+    showMessage(context, 'Write something or select media first.');
+    return;
+  }
+
+  if (selectedMedia != null) {
+    showMessage(
+      context,
+      'Photo and video uploads are not available yet. Please remove the media and try again.',
+    );
+    return;
+  }
+
+  try {
+    final postId = await widget.postService.createPost(
+      content: contentController.text.trim(),
+      category: category,
+    );
+
+    if (!mounted) return;
 
     final post = PostItem(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: postId,
       author: widget.profile.name,
       role: widget.profile.role,
       location: widget.profile.location,
       category: category,
       content: contentController.text.trim(),
-      mediaPath: selectedMedia?.path,
-      mediaType: mediaType,
+      mediaType: 'none',
       time: 'Just now',
     );
 
     widget.onPostCreated(post);
     Navigator.pop(context);
-    showMessage(context, 'Your post has been added.');
+    showMessage(context, 'Your post has been published.');
+  } catch (error) {
+    if (!mounted) return;
+
+    showMessage(context, 'Could not publish post: $error');
   }
+}
+  
 
   @override
   Widget build(BuildContext context) {
