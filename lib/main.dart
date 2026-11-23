@@ -978,56 +978,57 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  Widget _postMedia() {
-    final path = post.mediaPath!;
+  
+Widget _postMedia() {
+  final path = post.mediaPath;
 
-    if (post.mediaType == 'image') {
-      final file = File(path);
-      if (!file.existsSync()) {
-        return _missingMedia();
-      }
+  if (path == null || path.isEmpty) {
+    return _missingMedia();
+  }
 
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(
-          file,
-          width: double.infinity,
-          height: 230,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _missingMedia(),
-        ),
-      );
-    }
-
-    return Container(
-      height: 180,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.play_circle_outline,
-            color: AppColors.emerald,
-            size: 52,
-          ),
-          SizedBox(height: 8),
-          Text('Video attachment'),
-          SizedBox(height: 4),
-          Text(
-            'Video playback is not implemented yet.',
-            style: TextStyle(
-              color: AppColors.muted,
-              fontSize: 11,
-              ),
-          ),
-        ],
+  if (post.mediaType == 'image') {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        path,
+        width: double.infinity,
+        height: 230,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _missingMedia(),
       ),
     );
   }
+
+  return Container(
+    height: 180,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: AppColors.surfaceLight,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.play_circle_outline,
+          color: AppColors.emerald,
+          size: 52,
+        ),
+        SizedBox(height: 8),
+        Text('Video attachment'),
+        SizedBox(height: 4),
+        Text(
+          'Video playback is not implemented yet.',
+          style: TextStyle(
+            color: AppColors.muted,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+  
 
   Widget _missingMedia() {
     return Container(
@@ -1104,24 +1105,54 @@ class _CreatePostSheetState extends State<CreatePostSheet> {
 
   
 Future<void> publishPost() async {
-  if (contentController.text.trim().isEmpty &&
-      selectedMedia == null) {
+  final content = contentController.text.trim();
+  final selectedFile = selectedMedia;
+
+  if (content.isEmpty && selectedFile == null) {
     showMessage(context, 'Write something or select media first.');
     return;
   }
 
-  if (selectedMedia != null) {
-    showMessage(
-      context,
-      'Photo and video uploads are not available yet. Please remove the media and try again.',
-    );
-    return;
-  }
-
   try {
+    String? mediaUrl;
+    final postMediaType =
+        selectedFile == null ? 'none' : mediaType;
+
+    if (selectedFile != null) {
+      final extension =
+          selectedFile.path.split('.').last.toLowerCase();
+
+      const contentTypes = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'webp': 'image/webp',
+        'heic': 'image/heic',
+        'mp4': 'video/mp4',
+        'mov': 'video/quicktime',
+        'm4v': 'video/x-m4v',
+        '3gp': 'video/3gpp',
+        'webm': 'video/webm',
+      };
+
+      final contentType = contentTypes[extension];
+
+      if (contentType == null) {
+        throw Exception('Unsupported media format: .$extension');
+      }
+
+      mediaUrl = await MediaStorageService().uploadFile(
+        file: File(selectedFile.path),
+        folder: 'posts',
+        contentType: contentType,
+      );
+    }
+
     final postId = await postService.createPost(
-      content: contentController.text.trim(),
+      content: content,
       category: category,
+      mediaUrl: mediaUrl,
+      mediaType: selectedFile == null ? null : postMediaType,
     );
 
     if (!mounted) return;
@@ -1132,8 +1163,9 @@ Future<void> publishPost() async {
       role: widget.profile.role,
       location: widget.profile.location,
       category: category,
-      content: contentController.text.trim(),
-      mediaType: 'none',
+      content: content,
+      mediaPath: mediaUrl,
+      mediaType: postMediaType,
       time: 'Just now',
     );
 
@@ -1146,6 +1178,8 @@ Future<void> publishPost() async {
     showMessage(context, 'Could not publish post: $error');
   }
 }
+  
+
   
 
   @override
