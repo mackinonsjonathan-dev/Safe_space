@@ -1868,8 +1868,99 @@ Future<void> changeProfilePicture(BuildContext context) async {
     );
   }
 }
-  
 
+  
+Future<void> editProfile(BuildContext context) async {
+  final nameController = TextEditingController(text: profile.name);
+  final roleController = TextEditingController(text: profile.role);
+  final locationController =
+      TextEditingController(text: profile.location);
+  final bioController = TextEditingController(text: profile.bio);
+
+  final result = await showDialog<UserProfile>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Edit profile'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Display name',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: roleController,
+                decoration: const InputDecoration(
+                  labelText: 'Profession or role',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Location',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: bioController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'About you',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(
+                dialogContext,
+                UserProfile(
+                  name: nameController.text.trim().isEmpty
+                      ? profile.name
+                      : nameController.text.trim(),
+                  role: roleController.text.trim().isEmpty
+                      ? profile.role
+                      : roleController.text.trim(),
+                  location: locationController.text.trim().isEmpty
+                      ? profile.location
+                      : locationController.text.trim(),
+                  bio: bioController.text.trim().isEmpty
+                      ? profile.bio
+                      : bioController.text.trim(),
+                  avatarUrl: profile.avatarUrl,
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      );
+    },
+  );
+
+  nameController.dispose();
+  roleController.dispose();
+  locationController.dispose();
+  bioController.dispose();
+
+  if (result != null) {
+    await onProfileUpdated(result);
+  }
+}
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
