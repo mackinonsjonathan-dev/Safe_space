@@ -223,42 +223,81 @@ void initState() {
   });
 }
 
-  Future<void> loadData() async {
-    final prefs = await SharedPreferences.getInstance();
+  
+Future<void> loadData() async {
+  final prefs = await SharedPreferences.getInstance();
 
-    UserProfile loadedProfile = profile;
-    final profileString = prefs.getString('safe_profile');
+  UserProfile loadedProfile = profile;
+  final profileString = prefs.getString('safe_profile');
 
-    if (profileString != null) {
-      try {
-        loadedProfile = UserProfile.fromJson(
-          jsonDecode(profileString),
-        );
-      } catch (_) {}
-    }
-
-    List<PostItem> loadedPosts = [];
-    final postsString = prefs.getString('saved_community_posts');
-
-    if (postsString != null) {
-      try {
-        final decoded = jsonDecode(postsString) as List;
-        loadedPosts = decoded
-            .map((e) => PostItem.fromJson(
-                  Map<String, dynamic>.from(e),
-                ))
-            .toList();
-      } catch (_) {}
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      profile = loadedProfile;
-      posts = loadedPosts;
-      profileLoaded = true;
-    });
+  if (profileString != null) {
+    try {
+      loadedProfile = UserProfile.fromJson(
+        jsonDecode(profileString),
+      );
+    } catch (_) {}
   }
+
+  // Fetch the latest profile from Supabase.
+  try {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+
+    if (user != null) {
+      final remoteProfile = await client
+          .from('profiles')
+          .select('display_name, bio, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (remoteProfile != null) {
+        loadedProfile = UserProfile(
+          name: remoteProfile['display_name'] ??
+              loadedProfile.name,
+          role: loadedProfile.role,
+          location: loadedProfile.location,
+          bio: remoteProfile['bio'] ?? loadedProfile.bio,
+          avatarUrl: remoteProfile['avatar_url'] ??
+              loadedProfile.avatarUrl,
+        );
+      }
+    }
+  } catch (error) {
+    debugPrint('Could not load profile from Supabase: $error');
+  }
+
+  // Load locally saved posts.
+  List<PostItem> loadedPosts = [];
+  final postsString = prefs.getString('saved_community_posts');
+
+  if (postsString != null) {
+    try {
+      final decoded = jsonDecode(postsString) as List;
+      loadedPosts = decoded
+          .map((e) => PostItem.fromJson(
+                Map<String, dynamic>.from(e),
+              ))
+          .toList();
+    } catch (_) {}
+  }
+
+  if (!mounted) return;
+
+  // Save the refreshed profile locally.
+  await prefs.setString(
+    'safe_profile',
+    jsonEncode(loadedProfile.toJson()),
+  );
+
+  if (!mounted) return;
+
+  setState(() {
+    profile = loadedProfile;
+    posts = loadedPosts;
+    profileLoaded = true;
+  });
+}
+  
 
   Future<void> loadPostsFromSupabase() async {
   try {
