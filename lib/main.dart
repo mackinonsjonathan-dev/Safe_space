@@ -11,6 +11,7 @@ import 'core/supabase_service.dart';
 import 'core/app_colors.dart';
 import 'features/auth/phone_auth_screen.dart' as auth;
 import 'features/Posts/Post_service.dart';
+import 'core/media_storage_service.dart';
 
 
 Future<void> main() async {
@@ -299,8 +300,27 @@ void initState() {
   }
 }
 
-  Future<void> saveProfile(UserProfile updated) async {
+  
+Future<void> saveProfile(UserProfile updated) async {
+  try {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('You must be logged in.');
+    }
+
+    await client
+        .from('profiles')
+        .update({
+          'display_name': updated.name,
+          'bio': updated.bio,
+          'avatar_url': updated.avatarUrl,
+        })
+        .eq('id', user.id);
+
     final prefs = await SharedPreferences.getInstance();
+
     await prefs.setString(
       'safe_profile',
       jsonEncode(updated.toJson()),
@@ -309,7 +329,17 @@ void initState() {
     if (!mounted) return;
 
     setState(() => profile = updated);
+  } catch (error) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Could not save profile: $error'),
+      ),
+    );
   }
+}
+  
 
   Future<void> savePosts() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1775,7 +1805,7 @@ class NotificationsScreen extends StatelessWidget {
 
 class ProfileScreen extends StatelessWidget {
   final UserProfile profile;
-  final Function(UserProfile) onProfileUpdated;
+  final Future<void> Function(UserProfile) onProfileUpdated;
   final VoidCallback onLogout;
 
   const ProfileScreen({
@@ -1785,96 +1815,60 @@ class ProfileScreen extends StatelessWidget {
     required this.onLogout,
   });
 
-  Future<void> editProfile(BuildContext context) async {
-    final nameController = TextEditingController(text: profile.name);
-    final roleController = TextEditingController(text: profile.role);
-    final locationController =
-        TextEditingController(text: profile.location);
-    final bioController = TextEditingController(text: profile.bio);
+  
+Future<void> changeProfilePicture(BuildContext context) async {
+  try {
+    final picker = ImagePicker();
 
-    final result = await showDialog<UserProfile>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text('Edit profile'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Display name',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: roleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Profession or role',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: locationController,
-                  decoration: const InputDecoration(
-                    labelText: 'Location',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: bioController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'About you',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                  UserProfile(
-                    name: nameController.text.trim().isEmpty
-                        ? profile.name
-                        : nameController.text.trim(),
-                    role: roleController.text.trim().isEmpty
-                        ? profile.role
-                        : roleController.text.trim(),
-                    location:
-                        locationController.text.trim().isEmpty
-                            ? profile.location
-                            : locationController.text.trim(),
-                    bio: bioController.text.trim().isEmpty
-                        ? profile.bio
-                        : bioController.text.trim(),
-                  ),
-                );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
     );
 
-    nameController.dispose();
-    roleController.dispose();
-    locationController.dispose();
-    bioController.dispose();
+    if (image == null) return;
 
-    if (result != null) {
-      onProfileUpdated(result);
-    }
+    final extension = image.path.split('.').last.toLowerCase();
+
+    final contentType = extension == 'png'
+        ? 'image/png'
+        : extension == 'webp'
+            ? 'image/webp'
+            : 'image/jpeg';
+
+    final imageUrl = await MediaStorageService().uploadFile(
+      file: File(image.path),
+      folder: 'avatars',
+      contentType: contentType,
+    );
+
+    final updatedProfile = UserProfile(
+      name: profile.name,
+      role: profile.role,
+      location: profile.location,
+      bio: profile.bio,
+      avatarUrl: imageUrl,
+    );
+
+    await onProfileUpdated(updatedProfile);
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile picture updated successfully.'),
+      ),
+    );
+  } catch (error) {
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Profile picture upload failed: $error'),
+      ),
+    );
   }
+}
+  
 
   @override
   Widget build(BuildContext context) {
@@ -1904,15 +1898,28 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                const CircleAvatar(
-                  radius: 43,
-                  backgroundColor: AppColors.emeraldDark,
-                  child: Icon(
-                    Icons.person,
-                    size: 46,
-                    color: Colors.white,
-                  ),
-                ),
+                
+                
+GestureDetector(
+  onTap: () => changeProfilePicture(context),
+  child: CircleAvatar(
+    radius: 43,
+    backgroundColor: AppColors.emeraldDark,
+    backgroundImage: profile.avatarUrl != null &&
+            profile.avatarUrl!.isNotEmpty
+        ? NetworkImage(profile.avatarUrl!)
+        : null,
+    child: profile.avatarUrl == null ||
+            profile.avatarUrl!.isEmpty
+        ? const Icon(
+            Icons.person,
+            size: 46,
+            color: Colors.white,
+          )
+        : null,
+  ),
+),
+                
                 const SizedBox(height: 14),
                 Text(
                   profile.name,
