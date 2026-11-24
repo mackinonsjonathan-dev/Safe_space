@@ -12,6 +12,7 @@ import 'core/app_colors.dart';
 import 'features/auth/phone_auth_screen.dart' as auth;
 import 'features/Posts/Post_service.dart';
 import 'core/media_storage_service.dart';
+import 'package:video_player/video_player.dart';
 
 
 Future<void> main() async {
@@ -933,7 +934,7 @@ class PostCard extends StatelessWidget {
                       color: liked
                           ? Colors.redAccent
                           : AppColors.muted,
-                    ),
+                    ), 
                     label: Text(
                       'Like',
                       style: TextStyle(
@@ -998,35 +999,8 @@ Widget _postMedia() {
       ),
     );
   }
-
-  return Container(
-    height: 180,
-    width: double.infinity,
-    decoration: BoxDecoration(
-      color: AppColors.surfaceLight,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.play_circle_outline,
-          color: AppColors.emerald,
-          size: 52,
-        ),
-        SizedBox(height: 8),
-        Text('Video attachment'),
-        SizedBox(height: 4),
-        Text(
-          'Video playback is not implemented yet.',
-          style: TextStyle(
-            color: AppColors.muted,
-            fontSize: 11,
-          ),
-        ),
-      ],
-    ),
-  );
+  
+  return VideoPostPlayer(videoUrl: path);
 }
   
 
@@ -1044,6 +1018,87 @@ Widget _postMedia() {
     );
   }
 }
+
+
+class VideoPostPlayer extends StatefulWidget {
+  final String videoUrl;
+
+  const VideoPostPlayer({
+    super.key,
+    required this.videoUrl,
+  });
+
+  @override
+  State<VideoPostPlayer> createState() =>
+      _VideoPostPlayerState();
+}
+
+class _VideoPostPlayerState extends State<VideoPostPlayer> {
+  late final VideoPlayerController controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+    )..initialize().then((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!controller.value.isInitialized) {
+      return const SizedBox(
+        height: 220,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: AspectRatio(
+        aspectRatio: controller.value.aspectRatio,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            VideoPlayer(controller),
+            IconButton(
+              iconSize: 56,
+              color: Colors.white,
+              icon: Icon(
+                controller.value.isPlaying
+                    ? Icons.pause_circle_filled
+                    : Icons.play_circle_fill,
+              ),
+              onPressed: () {
+                setState(() {
+                  if (controller.value.isPlaying) {
+                    controller.pause();
+                  } else {
+                    controller.play();
+                  }
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 // ============================================================
 // CREATE POST
