@@ -847,7 +847,11 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final liked = post.likes.contains('You');
+    final currentUserId =
+    Supabase.instance.client.auth.currentUser?.id;
+
+final liked = currentUserId != null &&
+    post.likes.contains(currentUserId);
 
     return Card(
       child: Padding(
