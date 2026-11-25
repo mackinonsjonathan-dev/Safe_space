@@ -319,7 +319,10 @@ Future<void> loadData() async {
         content: item['content'] ?? '',
         mediaPath: item['media_url'],
         mediaType: item['media_type'] ?? 'none',
-        time: item['created_at']?.toString() ?? 'Recently',
+time: item['created_at']?.toString() ?? 'Recently',
+likes: (item['likes'] as List? ?? [])
+    .map((like) => like['user_id'].toString())
+    .toList(),
       );
     }).toList();
 
