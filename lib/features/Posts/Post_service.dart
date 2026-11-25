@@ -18,9 +18,12 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
           category,
           created_at,
           profiles!posts_author_id_fkey(
-          username,
-            display_name
-          )
+  username,
+  display_name
+),
+likes(
+  user_id
+)
         ''')
         .order('created_at', ascending: false);
 
