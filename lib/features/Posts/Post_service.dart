@@ -59,5 +59,41 @@ return response['id'].toString();
     throw Exception('Failed to publish post: $error');
   }
   }
+  
+  Future<void> likePost(String postId) async {
+    final user = _client.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('You must be logged in to like posts.');
+    }
+
+    try {
+      await _client.from('likes').insert({
+        'post_id': postId,
+        'user_id': user.id,
+      });
+    } catch (error) {
+      throw Exception('Failed to like post: $error');
+    }
+  }
+
+  Future<void> unlikePost(String postId) async {
+    final user = _client.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('You must be logged in to unlike posts.');
+    }
+
+    try {
+      await _client
+          .from('likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+    } catch (error) {
+      throw Exception('Failed to unlike post: $error');
+    }
+  }
+  
 }
 
