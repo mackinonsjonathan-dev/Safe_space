@@ -519,6 +519,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final PostService postService = PostService();
   String selectedCategory = 'All';
 
   final categories = const [
