@@ -628,7 +628,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ...filteredPosts.map(
                 (post) => PostCard(
                   post: post,
-                  onLike: () {
+                  onLike: () async {
                     final updated = PostItem(
                       id: post.id,
                       author: post.author,
@@ -643,15 +643,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       comments: List<CommentItem>.from(post.comments),
                     );
 
-                    const currentUser = 'You';
+                    final currentUser = Supabase.instance.client.auth.currentUser;
 
-                    if (updated.likes.contains(currentUser)) {
-                      updated.likes.remove(currentUser);
-                    } else {
-                      updated.likes.add(currentUser);
-                    }
+if (currentUser == null) {
+  showMessage(context, 'Please log in to like posts.');
+  return;
+}
 
-                    widget.onPostUpdated(updated);
+final alreadyLiked = updated.likes.contains(currentUser.id);
+
+try {
+  if (alreadyLiked) {
+    await postService.unlikePost(post.id);
+    updated.likes.remove(currentUser.id);
+  } else {
+    await postService.likePost(post.id);
+    updated.likes.add(currentUser.id);
+  }
+
+  widget.onPostUpdated(updated);
+} catch (error) {
+  showMessage(context, 'Could not update like: $error');
+}
                   },
                   onOpen: () {
                     Navigator.push(
