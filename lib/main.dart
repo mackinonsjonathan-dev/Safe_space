@@ -2018,6 +2018,7 @@ Future<void> changeProfilePicture(BuildContext context) async {
     );
 
     final updatedProfile = UserProfile(
+      id: profile.id,
       name: profile.name,
       role: profile.role,
       location: profile.location,
@@ -2104,7 +2105,8 @@ Future<void> editProfile(BuildContext context) async {
               Navigator.pop(
                 dialogContext,
                 UserProfile(
-                  name: nameController.text.trim().isEmpty
+                      id: profile.id,
+                      name: nameController.text.trim().isEmpty
                       ? profile.name
                       : nameController.text.trim(),
                   role: roleController.text.trim().isEmpty
