@@ -97,6 +97,31 @@ return response['id'].toString();
       throw Exception('Failed to unlike post: $error');
     }
   }
+
+  Future<void> createComment({
+  required String postId,
+  required String content,
+}) async {
+  final user = _client.auth.currentUser;
+
+  if (user == null) {
+    throw Exception('You must be logged in to comment.');
+  }
+
+  if (content.trim().isEmpty) {
+    throw Exception('Comment cannot be empty.');
+  }
+
+  try {
+    await _client.from('comments').insert({
+      'post_id': postId,
+      'author_id': user.id,
+      'content': content.trim(),
+    });
+  } catch (error) {
+    throw Exception('Failed to create comment: $error');
+  }
+  }
   
 }
 
