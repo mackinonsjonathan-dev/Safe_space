@@ -1404,6 +1404,7 @@ class PostDetailScreen extends StatefulWidget {
 class _PostDetailScreenState extends State<PostDetailScreen> {
   late PostItem post;
   final commentController = TextEditingController();
+  final PostService postService = PostService();
 
   @override
   void initState() {
@@ -1417,10 +1418,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     super.dispose();
   }
 
-  void addComment() {
-    final text = commentController.text.trim();
+  Future<void> addComment() async {
+  final text = commentController.text.trim();
 
-    if (text.isEmpty) return;
+  if (text.isEmpty) return;
+
+  try {
+    await postService.createComment(
+      postId: post.id,
+      content: text,
+    );
+
+    if (!mounted) return;
 
     final updated = PostItem(
       id: post.id,
@@ -1446,6 +1455,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     setState(() => post = updated);
     widget.onPostUpdated(updated);
     commentController.clear();
+  } catch (error) {
+    if (!mounted) return;
+    showMessage(context, 'Could not add comment: $error');
+  }
   }
 
   @override
