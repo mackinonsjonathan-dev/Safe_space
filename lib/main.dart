@@ -295,7 +295,16 @@ Future<void> loadData() async {
 
   if (!mounted) return;
 
-  debugPrint('Loaded profile ID: ${loadedProfile.id}');
+ if (mounted) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        'Profile ID: ${loadedProfile.id ?? "NULL"}',
+      ),
+      duration: const Duration(seconds: 10),
+    ),
+  );
+ }
   setState(() {
     profile = loadedProfile;
     posts = loadedPosts;
