@@ -249,13 +249,14 @@ Future<void> loadData() async {
     if (user != null) {
       final remoteProfile = await client
           .from('profiles')
-          .select('display_name, bio, avatar_url')
+          .select('id, display_name, bio, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
 
       if (remoteProfile != null) {
         loadedProfile = UserProfile(
-          name: remoteProfile['display_name'] ??
+              id: remoteProfile['id']?.toString(),
+              name: remoteProfile['display_name'] ??
               loadedProfile.name,
           role: loadedProfile.role,
           location: loadedProfile.location,
@@ -294,6 +295,7 @@ Future<void> loadData() async {
 
   if (!mounted) return;
 
+  debugPrint('Loaded profile ID: ${loadedProfile.id}');
   setState(() {
     profile = loadedProfile;
     posts = loadedPosts;
