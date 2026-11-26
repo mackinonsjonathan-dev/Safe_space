@@ -323,6 +323,18 @@ time: item['created_at']?.toString() ?? 'Recently',
 likes: (item['likes'] as List? ?? [])
     .map((like) => like['user_id'].toString())
     .toList(),
+        comments: (item['comments'] as List? ?? []).map((comment) {
+  final profile =
+      comment['profiles'] as Map<String, dynamic>?;
+
+  return CommentItem(
+    author: profile?['display_name'] ??
+        profile?['username'] ??
+        'Member',
+    text: comment['content'] ?? '',
+    time: comment['created_at']?.toString() ?? 'Recently',
+  );
+}).toList(),
       );
     }).toList();
 
