@@ -55,16 +55,17 @@ class SafeSpaceApp extends StatelessWidget {
 // USER PROFILE MODEL
 // ============================================================
 
-
 class UserProfile {
+  final String? id;
   final String name;
   final String role;
   final String location;
   final String bio;
   final String? avatarUrl;
 
-  const UserProfile({
-    required this.name,
+ const UserProfile({
+    this.id,
+    required this.name, 
     required this.role,
     required this.location,
     required this.bio,
@@ -73,6 +74,7 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
+      id: json['id']?.toString(),
       name: json['display_name'] ??
           json['name'] ??
           'Safe Space Member',
