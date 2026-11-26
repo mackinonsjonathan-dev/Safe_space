@@ -327,6 +327,7 @@ Future<void> loadData() async {
 
       return PostItem(
         id: item['id'].toString(),
+        authorId: item['author_id']?.toString(),
         author: authorProfile?['display_name'] ??
             authorProfile?['username'] ??
             'Member',
