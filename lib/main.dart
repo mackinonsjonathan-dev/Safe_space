@@ -1264,6 +1264,7 @@ Future<void> publishPost() async {
 
     final post = PostItem(
       id: postId,
+      authorId: widget.profile.id,
       author: widget.profile.name,
       role: widget.profile.role,
       location: widget.profile.location,
