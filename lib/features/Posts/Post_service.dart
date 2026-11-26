@@ -23,6 +23,15 @@ Future<List<Map<String, dynamic>>> fetchPosts() async {
 ),
 likes(
   user_id
+),
+comments(
+  id,
+  content,
+  created_at,
+  profiles!comments_author_id_fkey(
+    username,
+    display_name
+  )
 )
         ''')
         .order('created_at', ascending: false);
