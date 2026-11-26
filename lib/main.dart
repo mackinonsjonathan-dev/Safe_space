@@ -128,6 +128,7 @@ class CommentItem {
 
 class PostItem {
   final String id;
+  final String? authorId;
   final String author;
   final String role;
   final String location;
@@ -141,6 +142,7 @@ class PostItem {
 
   PostItem({
     required this.id,
+    this.authorId,
     required this.author,
     required this.role,
     required this.location,
@@ -157,6 +159,7 @@ class PostItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'authorId': authorId,
       'author': author,
       'role': role,
       'location': location,
@@ -170,9 +173,10 @@ class PostItem {
     };
   }
 
-  factory PostItem.fromJson(Map<String, dynamic> json) {
+  factory PostItem.fromJson(Map<String, dynamic> json) {     
     return PostItem(
       id: json['id'] ?? '',
+      authorId: json['authorId']?.toString(),
       author: json['author'] ?? 'Member',
       role: json['role'] ?? 'Community Member',
       location: json['location'] ?? 'Kenya',
