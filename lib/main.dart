@@ -875,6 +875,7 @@ class PostCard extends StatelessWidget {
     required this.post,
     required this.onLike,
     required this.onOpen,
+    required this.onAuthorTap,
   });
 
   @override
@@ -902,12 +903,15 @@ final liked = currentUserId != null &&
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        post.author,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      GestureDetector(
+  onTap: onAuthorTap,
+  child: Text(
+    post.author,
+    style: const TextStyle(
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
                       const SizedBox(height: 3),
                       Text(
                         '${post.role} • ${post.location} • ${post.time}',
