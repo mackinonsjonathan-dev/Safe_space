@@ -868,6 +868,7 @@ class PostCard extends StatelessWidget {
   final PostItem post;
   final VoidCallback onLike;
   final VoidCallback onOpen;
+  final VoidCallback onAuthorTap;
 
   const PostCard({
     super.key,
@@ -1507,6 +1508,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   onLike: () {
                     final updated = PostItem(
                       id: post.id,
+                      authorId: post.authorId,
                       author: post.author,
                       role: post.role,
                       location: post.location,
