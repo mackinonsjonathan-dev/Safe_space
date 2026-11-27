@@ -131,6 +131,43 @@ return response['id'].toString();
     throw Exception('Failed to create comment: $error');
   }
   }
+
+  Future<List<Map<String, dynamic>>> fetchUserPosts(
+    String userId) async {
+  try {
+    final response = await _client
+        .from('posts')
+        .select('''
+          id,
+          author_id,
+          content,
+          media_url,
+          media_type,
+          category,
+          created_at,
+          profiles!posts_author_id_fkey(
+            username,
+            display_name
+          ),
+          likes(user_id),
+          comments(
+            id,
+            content,
+            created_at,
+            profiles!comments_author_id_fkey(
+              username,
+              display_name
+            )
+          )
+        ''')
+        .eq('author_id', userId)
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  } catch (error) {
+    throw Exception('Failed to fetch user posts: $error');
+  }
+  }
   
 }
 
