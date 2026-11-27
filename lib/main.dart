@@ -13,6 +13,7 @@ import 'features/auth/phone_auth_screen.dart' as auth;
 import 'features/Posts/Post_service.dart';
 import 'core/media_storage_service.dart';
 import 'package:video_player/video_player.dart';
+import 'features/profile/follow_service.dart';
 
 
 Future<void> main() async {
@@ -87,6 +88,7 @@ class UserProfile {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'display_name': name,
       'role': role,
       'location': location,
@@ -1536,6 +1538,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     widget.onPostUpdated(updated);
                   },
                   onOpen: () {},
+                  onAuthorTap: () {},
                 ),
                 const SizedBox(height: 12),
                 const Text(
