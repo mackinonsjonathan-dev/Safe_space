@@ -37,6 +37,45 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
     super.dispose();
   }
 
+  Future<void> resetPassword() async {
+  final email = emailController.text.trim();
+
+  if (email.isEmpty ||
+      !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+          .hasMatch(email)) {
+    showMessage(context, 'Enter your registered email address.');
+    return;
+  }
+
+  setState(() => loading = true);
+
+  try {
+    await Supabase.instance.client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'safespace://auth-callback',
+    );
+
+    if (!mounted) return;
+
+    setState(() => loading = false);
+
+    showMessage(
+      context,
+      'Password reset instructions have been sent to your email.',
+    );
+  } on AuthException catch (error) {
+    if (!mounted) return;
+
+    setState(() => loading = false);
+    showMessage(context, error.message);
+  } catch (error) {
+    if (!mounted) return;
+
+    setState(() => loading = false);
+    showMessage(context, 'Could not request password reset.');
+  }
+  }
+
   
 Future<void> requestOtp() async {
   if (isEmailMode) {
