@@ -14,6 +14,8 @@ import 'features/Posts/Post_service.dart';
 import 'core/media_storage_service.dart';
 import 'package:video_player/video_player.dart';
 import 'features/profile/follow_service.dart';
+import 'dart:async';
+import 'features/auth/update_password_screen.dart';
 
 
 Future<void> main() async {
@@ -28,30 +30,84 @@ Future<void> main() async {
 // APP THEME
 // ============================================================
 
-class SafeSpaceApp extends StatelessWidget {
+class SafeSpaceApp extends StatefulWidget {
   const SafeSpaceApp({super.key});
 
   @override
+  State<SafeSpaceApp> createState() => _SafeSpaceAppState();
+}
+
+class _SafeSpaceAppState extends State<SafeSpaceApp> {
+  
+  final GlobalKey<NavigatorState> _navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  late final StreamSubscription<AuthState> _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _authSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        if (data.event == AuthChangeEvent.passwordRecovery &&
+    !_recoveryScreenOpen) {
+  _recoveryScreenOpen = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (_) => UpdatePasswordScreen(
+                  onPasswordUpdated: () {
+                    _recoveryScreenOpen = false;
+                    _navigatorKey.currentState?.pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const MainNavigationContainer(),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ),
+            );
+          });
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
+  }
+  
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
+      bool _recoveryScreenOpen = false;
       title: 'Safe Space',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: Supabase.instance.client.auth.currentSession != null
-    ? const MainNavigationContainer()
-    : auth.PhoneAuthScreen(
-        onAuthenticated: (context) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const MainNavigationContainer(),
+          ? const MainNavigationContainer()
+          : auth.PhoneAuthScreen(
+              onAuthenticated: (context) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MainNavigationContainer(),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
+
+
 // ============================================================
 // USER PROFILE MODEL
 // ============================================================
