@@ -1538,7 +1538,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     widget.onPostUpdated(updated);
                   },
                   onOpen: () {},
-                  onAuthorTap: () {},
+                  onAuthorTap: () {
+  final authorId = post.authorId;
+
+  if (authorId == null) return;
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PublicProfileScreen(
+        userId: authorId,
+      ),
+    ),
+  );
+},
                 ),
                 const SizedBox(height: 12),
                 const Text(
