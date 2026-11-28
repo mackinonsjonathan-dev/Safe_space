@@ -667,6 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onLike: () async {
                     final updated = PostItem(
                       id: post.id,
+                      authorId: post.authorId,
                       author: post.author,
                       role: post.role,
                       location: post.location,
@@ -713,6 +714,20 @@ try {
                       ),
                     );
                   },
+                  onAuthorTap: () {
+  final authorId = post.authorId;
+
+  if (authorId == null) return;
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PublicProfileScreen(
+        userId: authorId,
+      ),
+    ),
+  );
+},
                 ),
               ),
           ],
