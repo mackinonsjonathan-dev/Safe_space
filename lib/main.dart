@@ -2370,6 +2370,330 @@ GestureDetector(
     );
   }
 }
+
+class PublicProfileScreen extends StatefulWidget {
+  final String userId;
+
+  const PublicProfileScreen({
+    super.key,
+    required this.userId,
+  });
+
+  @override
+  State<PublicProfileScreen> createState() =>
+      _PublicProfileScreenState();
+}
+
+class _PublicProfileScreenState
+    extends State<PublicProfileScreen> {
+  final FollowService _followService = FollowService();
+  final PostService _postService = PostService();
+
+  UserProfile? profile;
+
+  int followersCount = 0;
+  int followingCount = 0;
+
+  bool isFollowing = false;
+  bool isLoading = true;
+  bool isBusy = false;
+
+  List<PostItem> userPosts = [];
+  
+  @override
+void initState() {
+  super.initState();
+  loadPublicProfile();
+}
+
+Future<void> loadPublicProfile() async {
+  try {
+    final client = SupabaseService.client;
+
+    final result = await client
+        .from('profiles')
+        .select('id, username, display_name, bio, avatar_url')
+        .eq('id', widget.userId)
+        .maybeSingle();
+
+    if (result == null) {
+      throw Exception('Profile not found.');
+    }
+
+    final loadedProfile = UserProfile(
+      id: result['id']?.toString(),
+      name: result['display_name'] ??
+          result['username'] ??
+          'Safe Space Member',
+      role: 'Community Member',
+      location: 'Kenya',
+      bio: result['bio'] ?? '',
+      avatarUrl: result['avatar_url'],
+    );
+
+    final results = await Future.wait([
+      _followService.getFollowersCount(widget.userId),
+      _followService.getFollowingCount(widget.userId),
+      _followService.isFollowing(widget.userId),
+    ]);
+
+    if (!mounted) return;
+
+    setState(() {
+      profile = loadedProfile;
+      followersCount = results[0] as int;
+      followingCount = results[1] as int;
+      isFollowing = results[2] as bool;
+      isLoading = false;
+    });
+    await loadUserPosts();
+  } catch (error) {
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Could not load profile: $error'),
+      ),
+    );
+  }
+}
+  Future<void> toggleFollow() async {
+  if (isBusy) return;
+
+  setState(() {
+    isBusy = true;
+  });
+
+  try {
+    if (isFollowing) {
+      await _followService.unfollowUser(widget.userId);
+    } else {
+      await _followService.followUser(widget.userId);
+    }
+
+    final updatedCount =
+        await _followService.getFollowersCount(widget.userId);
+
+    if (!mounted) return;
+
+    setState(() {
+      isFollowing = !isFollowing;
+      followersCount = updatedCount;
+      isBusy = false;
+    });
+  } catch (error) {
+    if (!mounted) return;
+
+    setState(() {
+      isBusy = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Follow action failed: $error'),
+      ),
+    );
+  }
+ }
+  Future<void> loadUserPosts() async {
+  try {
+    final data = await _postService.fetchUserPosts(widget.userId);
+
+    final loadedPosts = data.map((item) {
+      final authorProfile =
+          item['profiles'] as Map<String, dynamic>?;
+
+      return PostItem(
+        id: item['id'].toString(),
+        authorId: item['author_id']?.toString(),
+        author: authorProfile?['display_name'] ??
+            authorProfile?['username'] ??
+            'Member',
+        role: 'Community Member',
+        location: 'Kenya',
+        category: item['category'] ?? 'General',
+        content: item['content'] ?? '',
+        mediaPath: item['media_url'],
+        mediaType: item['media_type'] ?? 'none',
+        time: item['created_at']?.toString() ?? 'Recently',
+        likes: (item['likes'] as List? ?? [])
+            .map((like) => like['user_id'].toString())
+            .toList(),
+        comments: (item['comments'] as List? ?? []).map((comment) {
+          final commentProfile =
+              comment['profiles'] as Map<String, dynamic>?;
+
+          return CommentItem(
+            author: commentProfile?['display_name'] ??
+                commentProfile?['username'] ??
+                'Member',
+            text: comment['content'] ?? '',
+            time: comment['created_at']?.toString() ?? 'Recently',
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    if (!mounted) return;
+
+    setState(() {
+      userPosts = loadedPosts;
+    });
+  } catch (error) {
+    debugPrint('Error loading user posts: $error');
+  }
+  }
+  @override
+Widget build(BuildContext context) {
+  if (isLoading) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  if (profile == null) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: const Center(
+        child: Text('Profile could not be loaded.'),
+      ),
+    );
+  }
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(profile!.name),
+    ),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Center(
+          child: CircleAvatar(
+            radius: 45,
+            backgroundColor: AppColors.emeraldDark,
+            backgroundImage: profile!.avatarUrl != null
+                ? NetworkImage(profile!.avatarUrl!)
+                : null,
+            child: profile!.avatarUrl == null
+                ? const Icon(
+                    Icons.person,
+                    size: 45,
+                    color: Colors.white,
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: Text(
+            profile!.name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            profile!.bio,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _profileStat('Posts', userPosts.length),
+            _profileStat('Followers', followersCount),
+            _profileStat('Following', followingCount),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isBusy ? null : toggleFollow,
+            child: Text(
+              isBusy
+                  ? 'Please wait...'
+                  : isFollowing
+                      ? 'Following'
+                      : 'Follow',
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Posts',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (userPosts.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('No posts yet.'),
+            ),
+          ),
+        ...userPosts.map(
+          (post) => Card(
+            child: Padding(
+              padding: const EdgeInsets.all(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    post.content,
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '${post.likes.length} likes • ${post.comments.length} comments',
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+  Widget _profileStat(String label, int count) {
+  return Column(
+    children: [
+      Text(
+        count.toString(),
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.muted,
+          fontSize: 12,
+        ),
+      ),
+    ],
+  );
+  }
+}
 // ============================================================
 // SHARED HELPER
 // ============================================================
