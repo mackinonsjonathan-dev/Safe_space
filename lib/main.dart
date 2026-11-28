@@ -41,6 +41,7 @@ class _SafeSpaceAppState extends State<SafeSpaceApp> {
   
   final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
+    bool _recoveryScreenOpen = false;
 
   late final StreamSubscription<AuthState> _authSubscription;
 
@@ -87,7 +88,6 @@ class _SafeSpaceAppState extends State<SafeSpaceApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      bool _recoveryScreenOpen = false;
       title: 'Safe Space',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
