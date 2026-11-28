@@ -264,6 +264,14 @@ if (isEmailMode) ...[
       labelText: 'Password',
     ),
   ),
+  if (!isSignUp)
+  Align(
+    alignment: Alignment.centerRight,
+    child: TextButton(
+      onPressed: loading ? null : resetPassword,
+      child: const Text('Forgot password?'),
+    ),
+  ),
 ] else
   TextField(
     controller: phoneController,
